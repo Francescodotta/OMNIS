@@ -1,0 +1,28 @@
+services:
+  auth_service:
+    build: .
+    container_name: auth_service
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    environment:
+      - AUTH_ENV=${AUTH_ENV}
+      - MONGO_URI_AUTH=${MONGO_URI_AUTH}
+      - FLASK_RUN_AUTH_DEV_PORT=${FLASK_RUN_AUTH_DEV_PORT}
+      - FLASK_RUN_AUTH_PROD_PORT=${FLASK_RUN_AUTH_PROD_PORT}
+      - VIRTUAL_HOST=hpc.cast.unich.it
+      - VIRTUAL_PORT=5000
+    volumes:
+      - ./logs:/auth_microservice/logs
+    networks:
+      - auth_network
+      - nginx-proxy
+
+networks:
+  auth_network:
+    driver: bridge
+  nginx-proxy:
+    external: true
+    name: nginx-proxy

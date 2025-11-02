@@ -1,0 +1,30 @@
+services:
+  flow_cytometry_service:
+    build: .
+    container_name: flow_cytometry_service
+    restart: unless-stopped
+    ports:
+      - "5003:5003"
+    env_file:
+      - .env
+    environment:
+      - FLOW_CYTOMETRY_ENV=${FLOW_CYTOMETRY_ENV}
+      - MONGO_URI_FLOW_CYTOMETRY=${MONGO_URI_FLOW_CYTOMETRY}
+      - FLOW_CYTOMETRY_FLASK_RUN_DEVELOPMENT_PORT=${FLOW_CYTOMETRY_FLASK_RUN_DEVELOPMENT_PORT}
+      - FLOW_CYTOMETRY_FLASK_RUN_PRODUCTION_PORT=${FLOW_CYTOMETRY_FLASK_RUN_PRODUCTION_PORT}
+      - VIRTUAL_HOST=hpc.cast.unich.it
+      - VIRTUAL_PORT=5003
+    volumes:
+      - ./logs:/flow_cytometry_microservice/logs
+      - /media/datastorage/it_cast/omnis_microservice_db:/media/datastorage/it_cast/omnis_microservice_db
+    networks:
+      - flow_cytometry_network
+      - nginx-proxy
+
+networks:
+  flow_cytometry_network:
+    driver: bridge
+  nginx-proxy:
+    external: true
+    name: nginx-proxy
+    

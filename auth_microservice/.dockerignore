@@ -1,0 +1,6 @@
+logs/
+auth_env/
+tests/*
+app/private/
+__pycache__/
+*.pyc

@@ -1,0 +1,28 @@
+services:
+  metabolomics_service:
+    build: .
+    container_name: metabolomics_service
+    restart: unless-stopped
+    ports:
+      - "5001:5001"
+    env_file:
+      - .env
+    environment:
+      - METABOLOMICS_ENV=${METABOLOMICS_ENV}
+      - MONGO_URI_METABOLOMICS=${MONGO_URI_METABOLOMICS}
+      - FLASK_RUN_METABOLOMICS_DEV_PORT=${FLASK_RUN_METABO_DEV_PORT}
+      - FLASK_RUN_METABOLOMICS_PROD_PORT=${FLASK_RUN_METABO_PROD_PORT}
+      - VIRTUAL_HOST=hpc.cast.unich.it
+      - VIRTUAL_PORT=5001
+    volumes:
+      - ./logs:/metabolomics_microservice/logs
+      - /media/datastorage/it_cast/omnis_microservice_db:/media/datastorage/it_cast/omnis_microservice_db
+    networks: 
+      - metabolomics_network
+      - nginx-proxy
+networks:
+  metabolomics_network:
+    driver: bridge
+  nginx-proxy:
+    external: true
+    name: nginx-proxy

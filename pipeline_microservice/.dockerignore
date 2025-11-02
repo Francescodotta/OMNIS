@@ -1,0 +1,6 @@
+*.json
+metabolomics_env/
+*.pyc
+__pycache__/
+*.pkl
+*.log
