@@ -18,4 +18,3 @@
 */metabolomics_env
 *.rdb
 *analysis_env/
-tools/
