@@ -1,0 +1,16 @@
+<svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <pattern id="molecule" patternUnits="userSpaceOnUse" width="100" height="100">
+      <circle cx="10" cy="10" r="5" fill="#00cc66" />
+      <circle cx="90" cy="10" r="5" fill="#00cc66" />
+      <circle cx="50" cy="50" r="5" fill="#00cc66" />
+      <circle cx="10" cy="90" r="5" fill="#00cc66" />
+      <circle cx="90" cy="90" r="5" fill="#00cc66" />
+      <line x1="10" y1="10" x2="50" y2="50" stroke="#00cc66" stroke-width="2" />
+      <line x1="90" y1="10" x2="50" y2="50" stroke="#00cc66" stroke-width="2" />
+      <line x1="10" y1="90" x2="50" y2="50" stroke="#00cc66" stroke-width="2" />
+      <line x1="90" y1="90" x2="50" y2="50" stroke="#00cc66" stroke-width="2" />
+    </pattern>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#molecule)" />
+</svg>

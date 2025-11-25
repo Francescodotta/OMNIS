@@ -9,7 +9,6 @@
 *.json
 *.csv
 *.png
-*.fcs
 *.tsv
 *.xlsx
 *.featureXML
