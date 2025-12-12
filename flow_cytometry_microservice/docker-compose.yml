@@ -1,0 +1,24 @@
+services:
+  flow_cytometry_service:
+    build: .
+    container_name: flow_cytometry_service
+    restart: unless-stopped
+    ports:
+      - "5003:5003"
+    env_file:
+      - .env
+    environment:
+      - FLOW_CYTOMETRY_ENV=${FLOW_CYTOMETRY_ENV}
+      - MONGO_URI_FLOW_CYTOMETRY=${MONGO_URI_FLOW_CYTOMETRY}
+      - FLOW_CYTOMETRY_FLASK_RUN_DEVELOPMENT_PORT=${FLOW_CYTOMETRY_FLASK_RUN_DEVELOPMENT_PORT}
+      - FLOW_CYTOMETRY_FLASK_RUN_PRODUCTION_PORT=${FLOW_CYTOMETRY_FLASK_RUN_PRODUCTION_PORT}
+    volumes:
+      - ./logs:/flow_cytometry_microservice/logs
+      - ${DB_DIR}:${DB_DIR}
+    networks:
+      - omnis_network
+
+networks:
+  omnis_network:
+    external: true
+    name: omnis_network
