@@ -5,8 +5,9 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=development
-      - REACT_APP_AUTH_API_URL=http://auth_service:5000  # Cambia a auth_service:5000
-      - REACT_APP_FLOW_CYTOMETRY_API_URL=http://localhost:5003  # Cambia a flow_cytometry_service:5003
+      - REACT_APP_AUTH_API_URL=http://auth_service:5000
+      - REACT_APP_FLOW_CYTOMETRY_API_URL=http://localhost:5003  
+      - REACT_APP_METABOLOMICS_URL=http://localhost:5001 
     volumes:
       - ./:/app
     networks:

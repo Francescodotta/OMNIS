@@ -1,5 +1,5 @@
 import axios from 'axios';
-const apiUrL = process.env.METABOLOMICS_APP_API_URL;
+const apiUrL = process.env.REACT_APP_METABOLOMICS_URL;
 const api = axios.create({
   baseURL: apiUrL,
 });

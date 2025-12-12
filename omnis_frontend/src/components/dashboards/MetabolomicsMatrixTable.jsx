@@ -14,6 +14,7 @@ const MetabolomicsMatrixTable = ({ projectId }) => {
     const fetchMatrices = async () => {
       try {
         const response = await api.get(`/api/v1/project/${projectId}/matrix`);
+        console.log("Making request to:", api.defaults.baseURL + `/api/v1/project/${projectId}/matrix`);
         const data = Array.isArray(response.data) ? response.data : [];
         setMatrices(data);
       } catch (err) {
