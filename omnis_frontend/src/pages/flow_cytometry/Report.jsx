@@ -30,7 +30,7 @@ const ReportUmap = () => {
     const fetchUmapData = async () => {
       try {
         const response = await flowCytometryApi.get(
-          `/flow_cytometry/api/v1/project/${projectId}/pipeline_results/${pipelineId}/umap`
+          `/api/v1/project/${projectId}/pipeline_results/${pipelineId}/umap`
         );
         setUmapData(response.data.data);
       } catch (err) {
