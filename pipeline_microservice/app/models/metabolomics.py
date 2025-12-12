@@ -29,3 +29,17 @@ class PipelineModel:
             {"task_id": task_id},
             {"$set": {"status": status}}
         )
+
+class MetabolomicsMatrixModel:
+    """
+    Model to handle metabolomics matrix data
+    """
+
+    @staticmethod
+    def find_by_progressive_id(progressive_id):
+        """
+        Find metabolomics matrix data by progressive ID
+        """
+        return mongo_metabolomics_pipeline.db.metabolomics_matrix.find_one({"progressive_id": progressive_id})
+    
+    
