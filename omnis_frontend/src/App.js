@@ -29,11 +29,14 @@ import UploadPage from './components/transcriptomics/UploadFile';
 import GatingStrategyFormPage from './pages/flow_cytometry/GatingStrategyFormPage';
 import GatingStrategyDashboardPage from './pages/flow_cytometry/GatingStrategyDashboardPage';
 import Metabolomics_Pipeline from './components/pipelines/MetaboPipeline'
-import RadiomicsFormPage from './pages/radiomics/RadiomicsFormPage';
 import PipelineRunMetabolomicsDashboard from './components/dashboards/PipelineRunDashboardMetabolomics';
 import ReportMetabolomicsPipeline from './pages/MetabolomicsReport'
 import ProteomicsPipelineResultsDashboard from './components/proteomics/results/ProteomcisPipelineDashboard';
 import StandardizedFields from './components/forms/StandardizedFields';
+import MatrixUploadPage from './components/forms/MatrixUploadPage';
+import MetabolomicsMatrixUpload from './components/forms/MetabolomicsMatrixUpload';
+import ReportUmap from './pages/flow_cytometry/Report';
+import FinalReport from './pages/metabolomics/FinalReport';
 
 function App() {
   return (
@@ -95,21 +98,25 @@ function App() {
             <Route path='/project/:projectId/fcs_object/:progressiveId/gatingStrategy/edit/:gatingStrategyId' element={<ProtectedRoute component={GatingStrategyFormPage}/>}/>
             {/* Route to upload a transcriptomic file */}
             <Route path='/project/:projectId/transcriptomics/upload' element={<ProtectedRoute component={UploadPage}/>}/>
-            {/* Route to upload the radiomics file */}
-            <Route path='/project/:projectId/radiomics/upload' element={<ProtectedRoute component={RadiomicsFormPage}/>}/>
 
             {/* METABOLOMICS ROUTES */}
-            <Route path = '/project/:projectId/metabolomics/pipeline/:pipelineId/report' element={<ProtectedRoute component={ReportMetabolomicsPipeline}/>}/>
+            {/* <Route path = '/project/:projectId/metabolomics/pipeline/:pipelineId/report' element={<ProtectedRoute component={ReportMetabolomicsPipeline}/>}/> */}
 
             {/* PROTEOMICS ROUTES */}
             {/* RUNNING PIPELINES */}
             <Route path= '/project/:projectId/proteomics/pipelines' element={<ProtectedRoute component={ProteomicsPipelineResultsDashboard}/>}/>
-
+            {/* PROTEOMICS UPLOAD MATRIX FILE */}
+            <Route path='/project/:progressive_id/proteomics/matrix-upload' element={<ProtectedRoute component={MatrixUploadPage}/>}/>
+            {/* METABOLOMICS UPLOAD MATRIX FILE */}
+            <Route path='/project/:progressive_id/metabolomics/matrix-upload' element={<ProtectedRoute component={MetabolomicsMatrixUpload}/>}/>
 
             {/* STANDARDIZED FIELDS */}
             <Route path='/project/:projectId/standardized-fields' element={<ProtectedRoute component={StandardizedFields}/>}/>
 
-      
+            {/* Debugging route */}
+            <Route path='/project/:projectId/flow_cytometry/report/:pipelineId' element={<ProtectedRoute component={ReportUmap}/>}/>
+            {/* Metabolomics final Report */}
+            <Route path='/project/:projectId/metabolomics/pipeline/:pipelineId/report' element={<ProtectedRoute component={FinalReport}/>}/>
           </Routes>
         </div>
         </Router>
