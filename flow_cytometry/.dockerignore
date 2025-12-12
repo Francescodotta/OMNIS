@@ -1,8 +1,0 @@
-logs/*
-tests/*
-app/private/*
-__pycache__/
-*.pyc
-*.pyo
-app/__pycache__/*
-.pytest_cache/
