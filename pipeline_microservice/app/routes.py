@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from app.tasks import create_pipeline_chain, create_flow_cytometry_pipeline_chain, run_proteomics_pipeline, run_metabolomics_pipeline_task
+from app.tasks import create_pipeline_chain, create_flow_cytometry_pipeline_chain, run_metabolomics_pipeline_task
 
 bp = Blueprint('tasks', __name__)
 
