@@ -1033,13 +1033,12 @@ def delete_pipelinerun_by_progressive_id(project_id, progressive_id, username):
         logger.error(f"User does not have permissions for project: {project_id}")
         return {'error': 'User does not have permissions for project'}, 403
     
-    # 🦍 FIX: Verifica che la pipeline run esista prima di eliminarla
+    #  FIX: Verifica che la pipeline run esista prima di eliminarla
     pipeline_run = FlowCytoPipelineRun.find_by_progressive_id(progressive_id)
     if not pipeline_run:
         logger.error(f"Pipeline run not found: {progressive_id}")
         return {'error': 'Pipeline run not found'}, 404
-    
-    # 🦍 FIX: Elimina i file dei risultati se esistono
+
     paths_to_delete = [
         pipeline_run.get('umap_results_path'),
         pipeline_run.get('clustering_result_path'),
@@ -1053,8 +1052,7 @@ def delete_pipelinerun_by_progressive_id(project_id, progressive_id, username):
                 logger.info(f"Deleted result file: {file_path}")
             except Exception as e:
                 logger.warning(f"Failed to delete file {file_path}: {str(e)}")
-    
-    # 🦍 FIX: Elimina la pipeline run dal database
+
     try:
         result = FlowCytoPipelineRun.delete_by_progressive_id(progressive_id)
         if result:

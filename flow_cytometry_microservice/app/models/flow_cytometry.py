@@ -3,6 +3,9 @@ from .. import mongo_flow_cytometry, mongo_auth
 import os
 from ..config import Config
 import hashlib
+import shutil
+
+os.getenv("FLOW_CYTOMETRY_SAVE_PATH")
 
 class FlowCytometryModel:
     @staticmethod
@@ -46,6 +49,13 @@ class FlowCytometryModel:
     @staticmethod
     def delete_by_progressive_id(progressive_id):
         return mongo_flow_cytometry.db.flow_cytometry.delete_one({"progressive_id": int(progressive_id)})
+    
+    @staticmethod
+    def set_control_id(fcs_progressive_id, control_id):
+        return mongo_flow_cytometry.db.flow_cytometry.update_one(
+            {"progressive_id": fcs_progressive_id},
+            {"$set": {"control_id": control_id}}
+        )
     
     
     
@@ -175,12 +185,14 @@ class FlowCytoPipelineRun:
     def delete_by_progressive_id(progressive_id):
         # when deleting a pipeline run, delete also the files associated with the pipeline run
         pipeline_run = mongo_flow_cytometry.db.flow_cyto_pipeline_run.find_one({"progressive_id": int(progressive_id)})
-        for field in pipeline_run.keys():
-            print(field)
-            if "path" in field:
-                # if the file exists, delete it
-                if os.path.exists(pipeline_run[field]):
-                    os.remove(pipeline_run[field])
+        # get the task id
+        task_id = pipeline_run.get("task_id")
+        # construct the path to the folder
+        folder_path = os.path.join(os.getenv("FLOW_CYTOMETRY_SAVE_PATH"), str(task_id))
+        # delete the folder if it exists
+        if os.path.exists(folder_path):
+            shutil.rmtree(folder_path)
+
         return mongo_flow_cytometry.db.flow_cyto_pipeline_run.delete_one({"progressive_id": int(progressive_id)})
     
     @staticmethod

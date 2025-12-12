@@ -1,11 +1,14 @@
 import requests
 from app.models.flow_cytometry import FlowCytoPipeline, ProjectModel, FlowCytoPipelineRun
 import json
+import os
+
+pipeline_url = os.getenv('PIPELINE_SERVICE_URL', 'http://host.docker.internal:5002')
 
 # function to save the pipeline inside the database
 def save_flow_cytometry_pipeline_views(user, project_id, pipeline_data, status="processing"):
     # check that the project exists
-    project = ProjectModel.find_by_project_id(project_id)
+    project = ProjectModel.find_by_progressive_id(project_id)
     
     if project is None:
         return {"error": "The project does not exist"}, 404
@@ -67,14 +70,20 @@ def send_pipeline_to_processor(pipeline_data):
     """
     try:
         # Construct the URL for the pipeline processor service
-        pipeline_processor_url = "http://localhost:5002/api/process_flow_cytometry"
+        pipeline_processor_url = f"{pipeline_url}/api/process_flow_cytometry"
+
         
+        # json serialize the pipeline data
+        pipeline_data = json.loads(json.dumps(pipeline_data))
+
         # Send POST request to the pipeline processor
         response = requests.post(
             pipeline_processor_url,
             json=pipeline_data,
             headers={'Content-Type': 'application/json'}
         )
+
+        print(response.status_code)
         
         # Check if the request was successful
         if response.status_code == 202:

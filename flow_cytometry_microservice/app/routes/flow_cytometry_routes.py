@@ -35,7 +35,7 @@ def upload_fcs_files(project_id):
 
 
 # Route per leggere un esperimento di citofluorimetria tramite ID
-@bp.route('/api/v1/project/<project_id>/flow_cytometry/<progressive_id>', methods=['GET', 'OPTIONS'])
+@bp.route('/api/v1/project/<project_id>/flow_cytometry/<progressive_id>', methods=['GET'])
 @jwt_required()
 def get_fcs_file(project_id, progressive_id):
     user = get_jwt_identity()
@@ -66,6 +66,16 @@ def update_fcs_file(project_id, progressive_id):
 def delete_fcs_file(project_id, progressive_id):
     user = get_jwt_identity()
     result, status_code = fcv.delete_flow_cytometry_file_views(progressive_id, user)
+    return jsonify(result), status_code
+
+# route to delete multiple flow cytometry files
+@bp.route('/api/v1/project/<project_id>/flow_cytometry/batch_delete', methods=['DELETE'])
+@jwt_required()
+def delete_multiple_fcs_files(project_id):
+    user = get_jwt_identity()
+    data = request.get_json()
+    fcs_ids = data.get("fcs_ids", [])
+    result, status_code = fcv.delete_batch_flow_cytometry_files_views(project_id, fcs_ids, user)
     return jsonify(result), status_code
 
 
@@ -104,7 +114,6 @@ def get_running_pipelines(project_id):
 @bp.route('/api/v1/project/<project_id>/running_pipeline/<pipeline_id>', methods=['GET']) 
 @jwt_required()
 def get_pipeline_csv_data(project_id, pipeline_id):
-    print("sono qui")
     user = get_jwt_identity()
     result, status_code = fcv.get_fc_pipeline_run_results(project_id, pipeline_id, user)
     return result, status_code
@@ -201,3 +210,29 @@ def delete_gating_element_views(project_id, flow_cytometry_id, gating_strategy_i
     data = request.get_json()
     # get the logic of delete gating element using the views file
     pass
+
+# route to set the control id for a flow cytometry object
+@bp.route('/api/v1/project/<int:project_id>/flow_cytometry/<int:sample_id>/control', methods=['PUT'])
+def set_control_id_route(project_id, sample_id):
+    print(sample_id)
+    data = request.get_json()
+    control_id = data.get("control_id")
+    result, status_code = fcv.set_control_id_view(project_id, sample_id, control_id)
+    return jsonify(result), status_code
+
+
+# get the pipeline result from the backend
+@bp.route('/api/v1/project/<project_id>/pipeline_results/<pipeline_id>/umap', methods=['GET'])
+@jwt_required()
+def get_pipeline_umap_results(project_id, pipeline_id):
+    user = get_jwt_identity()
+    print(pipeline_id, project_id)
+    result, status_code = fcv.get_fc_pipeline_umap_results(project_id, pipeline_id, user)
+    return result, status_code
+
+@bp.route('/api/v1/project/<project_id>/pipeline/<pipeline_id>', methods=['DELETE'])
+@jwt_required()
+def delete_pipeline_by_progressive_id(project_id, pipeline_id):
+    user = get_jwt_identity()
+    result, status_code = fcv.delete_pipelinerun_by_progressive_id(project_id, pipeline_id, user)
+    return jsonify(result), status_code
