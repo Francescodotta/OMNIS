@@ -10,19 +10,13 @@ services:
     environment:
       - AUTH_ENV=${AUTH_ENV}
       - MONGO_URI_AUTH=${MONGO_URI_AUTH}
-      - FLASK_RUN_AUTH_DEV_PORT=${FLASK_RUN_AUTH_DEV_PORT}
-      - FLASK_RUN_AUTH_PROD_PORT=${FLASK_RUN_AUTH_PROD_PORT}
-      - VIRTUAL_HOST=hpc.cast.unich.it
-      - VIRTUAL_PORT=5000
+      - FLASK_AUTH_PORT=${FLASK_AUTH_PORT}
     volumes:
       - ./logs:/auth_microservice/logs
     networks:
-      - auth_network
-      - nginx-proxy
+      - omnis_network
 
 networks:
-  auth_network:
-    driver: bridge
-  nginx-proxy:
+  omnis_network:
     external: true
-    name: nginx-proxy
+    name: omnis_network

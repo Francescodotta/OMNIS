@@ -24,12 +24,11 @@ RUN mkdir -p logs
 # These will be overridden by docker-compose
 ENV FLASK_ENV=production
 ENV MONGO_URI_AUTH=unknown
-ENV FLASK_RUN_AUTH_DEV_PORT=7000
-ENV FLASK_RUN_AUTH_PROD_PORT=5000
+ENV FLASK_AUTH_PORT=5000
 
 # Expose the port that the application runs on
 # This will be dynamically set based on the environment
-EXPOSE 5000 7000
+EXPOSE 5000 
 
 # Command to start the application using the run.py script
-CMD ["python", "run.py"]
+CMD ["sh", "-c", "python create_admin.py && python run.py"]
