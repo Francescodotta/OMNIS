@@ -79,7 +79,7 @@ function FCPipeline() {
     const fetchFcsFiles = async () => {
       try {
         const response = await api.get(
-          `/flow_cytometry/api/v1/project/${progressive_id.progressive_id}/flow_cytometry`
+          `/api/v1/project/${progressive_id.progressive_id}/flow_cytometry`
         );
         setFcsFiles(response.data.data || []);
         console.log('Fetched FCS Files:', response.data.data);
@@ -224,7 +224,7 @@ function FCPipeline() {
     // Send the pipeline to the backend
     try {
       const response = await api.post(
-        `/flow_cytometry/api/v1/project/${progressive_id.progressive_id}/process_pipeline`,
+        `/api/v1/project/${progressive_id.progressive_id}/process_pipeline`,
         {
           body: JSON.stringify({ pipeline: activePipeline, name: pipelineName }),
         }
@@ -278,7 +278,7 @@ function FCPipeline() {
     // Send the pipeline to the backend with the pipeline name
     try {
       const response = await api.post(
-        `/flow_cytometry/api/v1/project/${progressive_id.progressive_id}/pipeline`,
+        `/api/v1/project/${progressive_id.progressive_id}/pipeline`,
         {
           body: JSON.stringify({
             pipeline: activePipeline,
