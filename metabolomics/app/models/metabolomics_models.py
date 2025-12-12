@@ -431,3 +431,45 @@ class PipelineModel:
     @staticmethod
     def delete_pipeline_by_id(pipeline_id):
         return mongo_metabolomics.db.pipeline.delete_one({"progressive_id": pipeline_id})
+    
+
+class MetabolomicsMatrixModel:
+    @staticmethod
+    def get_next_sequence_value():
+        sequence = mongo_metabolomics.db.metabolomics_matrix_counter.find_one_and_update(
+            {"_id": "project_id"},
+            {"$inc": {"sequence_value": 1}},
+            return_document=True,
+            upsert=True  # Aggiungi upsert=True per creare il documento se non esiste
+        )
+
+            # Se sequence è None, inizializza il contatore
+        if sequence is None:
+            mongo_metabolomics.db.metabolomics_matrix_counter.insert_one({"_id": "project_id", "sequence_value": 1})
+            return 1
+
+        return sequence["sequence_value"]
+    
+    @staticmethod
+    def create_metabolomics_matrix_data(data):
+        data["progressive_id"] = MetabolomicsMatrixModel.get_next_sequence_value()  # Aggiungi il progressive_id
+        return mongo_metabolomics.db.metabolomics_matrix.insert_one(data)
+
+    @staticmethod
+    def find_by_id(matrix_id):
+        return mongo_metabolomics.db.metabolomics_matrix.find_one({"progressive_id": matrix_id})
+    
+    @staticmethod
+    def find_by_project_id(project_id):
+        return mongo_metabolomics.db.metabolomics_matrix.find({"project_id": project_id})
+    
+    @staticmethod
+    def find_by_name(matrix_name):
+        matrix_name_hash = hashlib.sha256(matrix_name.encode()).hexdigest()
+        return mongo_metabolomics.db.metabolomics_matrix.find_one({"matrix_name_hash": matrix_name_hash})
+    
+    @staticmethod
+    def delete_by_progressive_id(matrix_id):
+        return mongo_metabolomics.db.metabolomics_matrix.delete_one({"progressive_id": matrix_id})
+    
+    

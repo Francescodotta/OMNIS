@@ -1,5 +1,5 @@
 from app.helpers import metabolomics_helpers
-from app.models.metabolomics_models import MetabolomicsModel, PipelineModel
+from app.models.metabolomics_models import MetabolomicsModel, PipelineModel, MetabolomicsMatrixModel
 from app.utils import metabolomics, security, pipeline
 import hashlib
 import json
@@ -11,6 +11,7 @@ import os
 load_dotenv()
 
 METABOLOMICS_SECRET_KEY = os.getenv('METABOLOMICS_SECRET_KEY')
+METABOLOMICS_SAVE_PATH = os.getenv('METABOLOMICS_SAVE_PATH')
 
 def upload_metabolomics_experiment_views(user_id, project_id, experimentName, metabolomics_file):
     # controlla che l'utente sia registrato e che il progetto esista
@@ -18,11 +19,11 @@ def upload_metabolomics_experiment_views(user_id, project_id, experimentName, me
     if status != 200:
         return response, status
     # salva il file
-    response, status = metabolomics_helpers.save_file(metabolomics_file)
+    response, status = metabolomics_helpers.save_file(metabolomics_file, project_id)
     if status != 200:
         return response, status
     # crea un nuovo esperimento di metabolomica
-    metabolomics_mzML_path = metabolomics.convert_raw_to_mzml(response)
+    metabolomics_mzML_path = metabolomics.convert_raw_to_mzml(response, project_id)
     # hash del nome dell'esperimento
     experiment_name_hash = hashlib.sha256(experimentName.encode()).hexdigest()
     metabolomics_data = {"project_id": project_id, 
@@ -211,9 +212,11 @@ def batch_upload_metabolomics_experiment_views(username, project_id, files, meta
     try:
         results = []
         duplicates = []
-        
-        print(username)
-        
+
+        # if project_id is not in METABOLOMICS_SAVE_PATH create the folder
+        if not os.path.exists(os.path.join(METABOLOMICS_SAVE_PATH, f'project_{str(project_id)}')):
+            os.makedirs(os.path.join(METABOLOMICS_SAVE_PATH, f'project_{str(project_id)}'))
+
         # Process metadata file if provided
         metadata_dict = {}
         if metadata_file:
@@ -248,7 +251,7 @@ def batch_upload_metabolomics_experiment_views(username, project_id, files, meta
                     continue
 
                 # Save the RAW file
-                response, status = metabolomics_helpers.save_file(file)
+                response, status = metabolomics_helpers.save_file(file, project_id)
                 if status != 200:
                     results.append({
                         "filename": file.filename,
@@ -257,7 +260,7 @@ def batch_upload_metabolomics_experiment_views(username, project_id, files, meta
                     continue
 
                 # Convert RAW to mzML
-                metabolomics_mzML_path = metabolomics.convert_raw_to_mzml(response)
+                metabolomics_mzML_path = metabolomics.convert_raw_to_mzml(response, project_id)
                 
                 # Create experiment name hash
                 experiment_name_hash = hashlib.sha256(file.filename.encode()).hexdigest()
@@ -350,3 +353,113 @@ def get_metabolomics_pipeline_result_views(username, project_id, progressive_id)
         return df_json, 200
 
     return {'message': 'The pipeline ran succesfully, but no annotation was selected as the step'}, 200
+
+
+
+# load the metabolomics matrix inside the database
+def upload_metabolomics_matrix_views(username, project_id, matrix_file, experimentName):
+    # Validate user and project
+    response, status_code = metabolomics_helpers.validate_metabolomics_data(username, project_id, "temp_experiment", matrix_file)
+    if status_code != 200:
+        return response, status_code
+    
+    # save the file
+    response, status = metabolomics_helpers.save_file(matrix_file, project_id)
+    if status != 200:
+        return response, status
+
+    # save the matrix file inside the database
+    matrix = {
+        "matrix_file": response,
+        "project_id": project_id,
+        "experiment_name": experimentName,
+    }
+    try:
+        MetabolomicsMatrixModel.create_metabolomics_matrix_data(matrix)
+        return {"message": "Metabolomics matrix uploaded correctly"}, 201
+    except Exception as e:
+        return {"error": f"Error uploading metabolomics matrix: {str(e)}"}, 500
+
+
+def get_metabolomics_matrices_by_projectId_views(user_id, project_id):
+    matrices = MetabolomicsMatrixModel.find_by_project_id(project_id)
+    if not matrices:
+        return {"error": "No metabolomics matrices found for this project"}, 404
+    matrices = list(matrices)
+    for matrix in matrices:
+        matrix.pop("_id", None)
+    return matrices, 200
+
+def get_pipeline_from_progressive_id(username, project_id, progressive_id):
+    # Validate user and project
+    response, status_code = metabolomics_helpers.validate_pipeline_data(username, project_id)    
+    if status_code != 200:
+        return response, status_code    
+
+    pipeline_data = PipelineModel.find_by_progressive_id(int(progressive_id))
+    if not pipeline_data:
+        return {"error": "Pipeline not found"}, 404
+    
+    # Remove MongoDB _id
+    pipeline_data.pop("_id", None)
+    
+    # 🦍 FIX: Il campo csv_volcano_data è dentro "results", non al livello principale!
+    results = pipeline_data.get("results", {})
+    path_volcano = results.get("csv_volcano_data", None)
+    
+    if path_volcano is None:
+        return {
+            "error": "Volcano plot data not available for this pipeline",
+            "pipeline_status": pipeline_data.get("status", "Unknown"),
+            "available_results": list(results.keys()) if results else [],
+            "message": "Run a matrix analysis pipeline with statistics step to generate volcano data"
+        }, 404
+    
+    # Check if file exists on disk
+    if not os.path.exists(path_volcano):
+        return {
+            "error": "Volcano plot file not found on disk",
+            "path": path_volcano,
+            "message": "The volcano plot CSV file may have been moved or deleted."
+        }, 404
+    
+    try:
+        df = pd.read_csv(path_volcano)
+        volcano_json = df.to_dict(orient='records')
+        
+        # Return only the volcano data array for the frontend
+        return volcano_json, 200
+        
+    except Exception as e:
+        return {
+            "error": f"Error reading volcano plot data: {str(e)}",
+            "path": path_volcano
+        }, 500
+
+
+def get_pipeline_details_views(username, project_id, pipeline_id):
+    # Validate user and project
+    response, status_code = metabolomics_helpers.validate_pipeline_data(username, project_id)    
+    if status_code != 200:
+        return response, status_code    
+
+    pipeline_data = PipelineModel.find_by_progressive_id(int(pipeline_id))
+    if not pipeline_data:
+        return {"error": "Pipeline not found"}, 404
+    
+    # Remove MongoDB _id
+    pipeline_data.pop("_id", None)
+    
+    # Prepare the response with only the essential information
+    pipeline_details = {
+        "progressive_id": pipeline_data.get("progressive_id"),
+        "name": pipeline_data.get("name"),
+        "status": pipeline_data.get("status", "Unknown"),
+        "project_id": pipeline_data.get("project_id"),
+        "task_id": pipeline_data.get("task_id"),
+        "created_at": str(pipeline_data.get("created_at", "N/A")),
+        "pipeline_steps": pipeline_data.get("pipeline_data", {}).get("pipeline", {}).get("steps", []),
+        "results_available": list(pipeline_data.get("results", {}).keys()) if pipeline_data.get("results") else []
+    }
+    
+    return pipeline_details, 200

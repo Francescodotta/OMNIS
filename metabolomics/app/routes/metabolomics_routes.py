@@ -146,3 +146,51 @@ def get_pipeline_results(project_id, pipeline_id):
     # call the view function to get the results
     result, status_code = metabolomics_views.get_metabolomics_pipeline_result_views(user_id, project_id, pipeline_id)
     return jsonify(result), status_code
+
+# route for matrix upload
+@bp.route('/api/v1/project/<project_id>/matrix', methods=['POST'])
+@jwt_required()
+def upload_metabolomics_matrix(project_id):
+    # get the user id
+    user_id = get_jwt_identity()
+    
+    print(request.files)
+    if 'matrix_file' not in request.files:
+        return jsonify({"message": "No file provided"}), 400
+    file = request.files['matrix_file']
+    # get the name of the experiment from data
+    experiment_name = request.form.get("experiment_name")
+    print("Uploading matrix for experiment:", experiment_name)
+    response, status_code = metabolomics_views.upload_metabolomics_matrix_views(user_id, project_id, file, experiment_name)
+    return jsonify(response), status_code
+
+# route to get all metabolomics matrices for a project
+@bp.route('/api/v1/project/<project_id>/matrix', methods=['GET'])
+@jwt_required()
+def get_metabolomics_matrices(project_id):
+    # get the user id
+    user_id = get_jwt_identity()
+    response, status_code = metabolomics_views.get_metabolomics_matrices_by_projectId_views(user_id, project_id)
+    return jsonify(response), status_code
+
+
+# route to get a specific volcano plot result from pipeline
+@bp.route('/api/v1/project/<project_id>/pipelines/<pipeline_id>/volcano_plot/', methods=['GET'])
+@jwt_required()
+def get_volcano_plot_result(project_id, pipeline_id):
+    # get the user id
+    user_id = get_jwt_identity()
+    # call the view function to get the volcano plot result
+    result, status_code = metabolomics_views.get_pipeline_from_progressive_id(user_id, project_id, pipeline_id)
+    return jsonify(result), status_code
+
+
+# route to get pipeline details
+@bp.route('/api/v1/project/<project_id>/pipelines/<pipeline_id>', methods=['GET'])
+@jwt_required()
+def get_pipeline_details(project_id, pipeline_id):
+    # get the user id
+    user_id = get_jwt_identity()
+    # call the view function to get the pipeline details
+    result, status_code = metabolomics_views.get_pipeline_details_views(user_id, project_id, pipeline_id)
+    return jsonify(result), status_code

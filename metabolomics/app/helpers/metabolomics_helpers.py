@@ -30,13 +30,13 @@ def validate_metabolomics_data(username, project_id, experimentName, files):
     return {"message": "Data validated"}, 200
 
 
-def save_file(file):
+def save_file(file, project_id):
     try:
-        file.save(METABOLOMICS_SAVE_PATH + file.filename)
+        file.save(os.path.join(METABOLOMICS_SAVE_PATH, f'project_{project_id}', file.filename))
     # se c'è qualche errore
     except Exception as e:
         return {"error": str(e)}, 500
-    return METABOLOMICS_SAVE_PATH + file.filename,200
+    return os.path.join(METABOLOMICS_SAVE_PATH, f'project_{project_id}', file.filename), 200
 
 
 def validate_pipeline_data(user_id, project_id):
