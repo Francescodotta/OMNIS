@@ -1,4 +1,3 @@
-version: '3.8'
 
 services:
   web:
@@ -25,7 +24,7 @@ services:
       - redis
     networks:
       - pipeline_network
-      - omnis_microservice
+      - omnis_network
 
   celery:
     build:
@@ -46,7 +45,7 @@ services:
       - redis
     networks:
       - pipeline_network
-      - omnis_microservice
+      - omnis_network
 
   redis:
     image: redis:alpine
@@ -61,8 +60,9 @@ services:
 networks:
   pipeline_network:
     driver: bridge
-  omnis_microservice:
-    driver: bridge
+  omnis_network:
+    external: true
+    name: omnis_network
 
 volumes:
   redis_data:
