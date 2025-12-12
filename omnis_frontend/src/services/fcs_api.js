@@ -3,7 +3,7 @@ import api from '../utils/ApiFlowCytometry'
 
 export const fetchPipelines = async (projectId) => {
     try {
-        const response = await api.get(`/flow_cytometry/api/v1/project/${projectId}/running_pipelines`);
+        const response = await api.get(`/api/v1/project/${projectId}/running_pipelines`);
         console.log('Fetched pipelines:', response.data);
         return response.data.data || [];
     } catch (error) {
@@ -15,7 +15,7 @@ export const fetchPipelines = async (projectId) => {
 
 export const fetchPipelinesDataClustering = async (projectId, pipelineId) => {
     try{
-        const response = await api.get(`/flow_cytometry/api/v1/project/${projectId}/running_pipeline/${pipelineId}`);
+        const response = await api.get(`/api/v1/project/${projectId}/running_pipeline/${pipelineId}`);
         return response.data || [];
     }
     catch (error) {
@@ -27,7 +27,7 @@ export const fetchPipelinesDataClustering = async (projectId, pipelineId) => {
 // function to fetch the heatmap data
 export const fetchHeatmap = async (projectId, pipelineId) => {
     try {
-        const response = await api.get(`/flow_cytometry/api/v1/project/${projectId}/heatmap/${pipelineId}`);
+        const response = await api.get(`/api/v1/project/${projectId}/heatmap/${pipelineId}`);
         return response.data || [];
     } catch (error) {
         console.error('Error fetching heatmap data:', error);
@@ -43,7 +43,7 @@ export const fetchGatingData = async (projectId, progressiveId, gatingStrategyId
         console.log(progressiveId, projectId)
         // if parentId is not null, add it to the query parameter
         const queryParams = parentId ? `?parentId=${parentId}` : '';
-        const response = await api.get(`/flow_cytometry/api/v1/project/${projectId}/flow_cytometry/${progressiveId}/gating_strategies/${gatingStrategyId}/scatterplot${queryParams}`);
+        const response = await api.get(`/api/v1/project/${projectId}/flow_cytometry/${progressiveId}/gating_strategies/${gatingStrategyId}/scatterplot${queryParams}`);
         return response.data || [];
     } catch (error) {
         console.error('Error fetching gating data:', error);
@@ -55,7 +55,7 @@ export const fetchGatingData = async (projectId, progressiveId, gatingStrategyId
 // function to delete the gating strategy
 export const deleteGatingStrategy = async (projectId, progressiveId, gatingStrategyId) => {
     try {
-        const response = await api.delete(`/flow_cytometry/api/v1/project/${projectId}/flow_cytometry/${progressiveId}/gating_strategies/${gatingStrategyId}`);
+        const response = await api.delete(`/api/v1/project/${projectId}/flow_cytometry/${progressiveId}/gating_strategies/${gatingStrategyId}`);
         return response.data || [];
     }
     catch (error) {
@@ -67,7 +67,7 @@ export const deleteGatingStrategy = async (projectId, progressiveId, gatingStrat
 // function to delete the pipeline
 export const deletePipeline = async (projectId, pipelineId) => {
     try {
-        const response = await api.delete(`/flow_cytometry/api/v1/project/${projectId}/pipeline/${pipelineId}`);
+        const response = await api.delete(`/api/v1/project/${projectId}/pipeline/${pipelineId}`);
         console.log('Pipeline deleted:', response.data);
         return response.data;
     } catch (error) {
