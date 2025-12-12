@@ -36,6 +36,8 @@ import {
   Database,
   BarChart2,
 } from "lucide-react"
+import api, { logout } from "../utils/Api"
+import axios from "axios"
 
 const Navbar = () => {
   const [role, setRole] = useState(null)
@@ -52,11 +54,8 @@ const Navbar = () => {
     setRole(localStorage.getItem("role"))
   }, [])
 
-  const handleLogout = () => {
-    localStorage.removeItem("access_token")
-    localStorage.removeItem("refresh_token")
-    localStorage.removeItem("role")
-    window.location.reload()
+  const handleLogout = async () => {
+    await logout()
   }
 
   const handleProfileMenuOpen = (event) => {

@@ -1,5 +1,5 @@
 import axios from 'axios';
-const apiUrL = 'http://localhost:5001/';
+const apiUrL = process.env.METABOLOMICS_APP_API_URL;
 const api = axios.create({
   baseURL: apiUrL,
 });

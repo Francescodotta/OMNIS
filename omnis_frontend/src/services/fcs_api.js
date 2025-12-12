@@ -4,6 +4,7 @@ import api from '../utils/ApiFlowCytometry'
 export const fetchPipelines = async (projectId) => {
     try {
         const response = await api.get(`/flow_cytometry/api/v1/project/${projectId}/running_pipelines`);
+        console.log('Fetched pipelines:', response.data);
         return response.data.data || [];
     } catch (error) {
         console.error('Error fetching pipelines:', error);
@@ -62,3 +63,15 @@ export const deleteGatingStrategy = async (projectId, progressiveId, gatingStrat
         throw new Error('Error deleting gating strategy');
     }
 }
+
+// function to delete the pipeline
+export const deletePipeline = async (projectId, pipelineId) => {
+    try {
+        const response = await api.delete(`/flow_cytometry/api/v1/project/${projectId}/pipeline/${pipelineId}`);
+        console.log('Pipeline deleted:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Error deleting pipeline:', error);
+        throw new Error('Error deleting pipeline');
+    }
+};

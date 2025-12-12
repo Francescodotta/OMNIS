@@ -1,5 +1,7 @@
 import axios from 'axios';
-const apiUrL = 'https://hpc.cast.unich.it/';
+// get the url from .env file FLOW_CYTOMETRY_API_URL
+const apiUrL = process.env.REACT_APP_FLOW_CYTOMETRY_API_URL;
+console.log('Flow Cytometry API URL:', apiUrL);
 const api = axios.create({
   baseURL: apiUrL,
 });

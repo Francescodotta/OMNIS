@@ -16,6 +16,9 @@ const Navbar = () => {
     e.preventDefault();
 
     try {
+      // Usa axios direttamente per il login (senza l'interceptor che aggiunge vecchi token)
+      // console log the url used for login
+      console.log("Login URL:", api.defaults.baseURL + "api/login");
       const response = await api.post("/api/login", { username, password });
 
       if (response.status !== 200) {
@@ -24,22 +27,26 @@ const Navbar = () => {
 
       const data = response.data;
       console.log("Login successful:", data);
+      console.log("NEW access_token:", data.access_token);
+      console.log("NEW refresh_token:", data.refresh_token);
+      
+      // Salva i NUOVI token
       localStorage.setItem('access_token', data.access_token);
       localStorage.setItem('refresh_token', data.refresh_token);
       localStorage.setItem('username', username);
       localStorage.setItem('role', data.role);
 
-      
+      // Forza reload completo invece di navigate()
       if (data.role === 'admin') {
-        navigate("/admin");
+        window.location.href = "/admin";
       } else if (data.role === 'user') {
-        navigate("/user");
+        window.location.href = "/user";
       } else {
-        navigate("/");
+        window.location.href = "/";
       }
       
-      // Puoi gestire lo stato di login qui
     } catch (error) {
+      console.error("Login error:", error);
       setError("Login failed. Please check your credentials and try again.");
     }
   };

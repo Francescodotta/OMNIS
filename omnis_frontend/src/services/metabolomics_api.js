@@ -34,3 +34,40 @@ export const fetchMetabolomicsPipelineResults = async(projectId, progressiveId) 
         throw new Error('Error in retrieving the results of he current pipeline.');
     }
 }
+
+
+export const fetchMetabolomicsMatrices = async (projectId) => {
+    try {
+        const response = await api.get(`/api/v1/project/${projectId}/matrix`);
+        console.log('Matrices retrieved:', response.data);
+        return response.data || [];
+    } catch (err) {
+        console.error('Error fetching matrices:', err);
+        throw new Error('Error fetching matrices for this project');
+    }
+};
+
+export const fetchPipelineDetails = async (projectId, pipelineId) => {
+    try {
+        const response = await api.get(`/api/v1/project/${projectId}/pipelines/${pipelineId}`);
+        console.log('Pipeline details retrieved:', response.data);
+        return response.data || {};
+    }
+    catch (err) {
+        console.error('Error fetching pipeline details:', err);
+        throw new Error('Error fetching pipeline details');
+    }
+}
+
+
+// 🌋 NEW: Fetch Volcano Plot data
+export const fetchVolcanoPlotData = async (projectId, pipelineId) => {
+    try {
+        const response = await api.get(`/api/v1/project/${projectId}/pipelines/${pipelineId}/volcano_plot/`);
+        console.log('Volcano plot data retrieved:', response.data);
+        return response.data || [];
+    } catch (err) {
+        console.error('Error fetching volcano plot data:', err);
+        throw new Error('Error fetching volcano plot data for this pipeline');
+    }
+};

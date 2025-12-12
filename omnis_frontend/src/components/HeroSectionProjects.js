@@ -31,6 +31,7 @@ const ProjectDetails = () => {
   useEffect(() => {
     const fetchProject = async () => {
       try {
+        console.log(api.defaults.baseURL + `api/project/${progressive_id}`);
         const response = await api.get(`/api/project/${progressive_id}`);
         setProject(response.data);
         setLoading(false);
@@ -155,7 +156,7 @@ const ProjectDetails = () => {
             color: "#1E293B"
           }}
         >
-          Azioni Rapide
+          Actions
         </Typography>
         
         <Stack 
@@ -189,7 +190,7 @@ const ProjectDetails = () => {
               },
             }}
           >
-            Campi Standardizzati
+            Standardized Fields
           </Button>
 
           <Divider 
@@ -228,7 +229,7 @@ const ProjectDetails = () => {
               },
             }}
           >
-            Gestisci Membri
+            Handle Members
           </Button>
         </Stack>
 
@@ -244,7 +245,7 @@ const ProjectDetails = () => {
               fontSize: "0.875rem"
             }}
           >
-            Utilizza i campi standardizzati per definire strutture dati coerenti e riutilizzabili nel tuo progetto
+            Use standardized fields to define consistent and reusable data structures in your project.
           </Typography>
         </Box>
       </Box>

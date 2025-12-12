@@ -1,0 +1,144 @@
+/* gatingStrategyTable.module.css */
+
+/* Container */
+.container {
+    max-width: 900px;
+    margin: 20px auto;
+    padding: 20px;
+    background: #f9f9f9;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Title */
+.title {
+    text-align: center;
+    margin-bottom: 20px;
+    font-weight: bold;
+    color: #333;
+}
+
+/* Loading Spinner */
+.loadingContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100px;
+}
+
+/* Error Message */
+.errorMessage {
+    text-align: center;
+    color: red;
+    font-weight: bold;
+}
+
+/* Table Styling */
+.tableContainer {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: #fff;
+    text-align: center; 
+}
+
+.table thead {
+    background-color: #1976d2;
+    color: white;
+    text-align: center;
+}
+
+.table thead th {
+    padding: 12px;
+}
+
+.tableRow:hover {
+    background-color: #f1f1f1;
+}
+
+/* Table Header Styling */
+.tableHeader {
+    background-color: #1976d2; /* MUI Primary Color */
+    color: white; /* Ensures all text within the header is white */
+}
+
+.tableHeaderCell {
+    font-weight: bold;
+    text-align: left;
+    padding: 12px;
+    color: white; /* Explicitly sets text color to white */
+}
+
+/* Action Buttons */
+.actionButtons {
+    display: flex;
+    gap: 10px;
+}
+
+/* Eye Icon Button - Primary Color */
+.iconButton {
+    transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;
+    color: #1976d2; /* MUI Default Primary Color */
+}
+
+.iconButton:hover {
+    transform: scale(1.1);
+    background-color: rgba(25, 118, 210, 0.1); /* Primary Color with Opacity */
+}
+
+/* Delete Button - Red Color */
+.deleteButton {
+    color: #d32f2f; /* Red Color */
+}
+
+.deleteButton:hover {
+    background-color: rgba(211, 47, 47, 0.1); /* Red with Opacity */
+}
+
+/* Add Icon Button - Optional: Use Primary Color */
+.addButton {
+    color: #1976d2; /* MUI Default Primary Color */
+}
+
+.addButton:hover {
+    background-color: rgba(25, 118, 210, 0.1); /* Primary Color with Opacity */
+}
+
+/* Edit Icon Button - Primary Color */
+.editButton {
+    color: #1976d2; /* MUI Primary Color */
+}
+
+.editButton:hover {
+    background-color: rgba(25, 118, 210, 0.1); /* Primary Color with Opacity */
+    transform: scale(1.1);
+}
+
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .container {
+        padding: 15px;
+    }
+
+    .table thead th {
+        font-size: 14px;
+        padding: 10px;
+    }
+
+    .table tbody td {
+        font-size: 13px;
+        padding: 8px;
+    }
+
+    .actionButtons {
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+    }
+}

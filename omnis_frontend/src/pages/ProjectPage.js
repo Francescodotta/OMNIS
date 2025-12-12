@@ -27,11 +27,14 @@ import ProteomicsTable from "../components/dashboards/ProteomicsTable"
 import CytometryTable from "../components/dashboards/CytometryTable"
 import api from "../utils/Api"
 import { useEffect } from "react"
+import ProteomicsMatrixTable from "../components/dashboards/ProteomisMatrixTable"
+import MetabolomicsMatrixTable from "../components/dashboards/MetabolomicsMatrixTable"
 
 const ProjectPage = () => {
   const navigate = useNavigate()
   const { progressive_id } = useParams()
   const [project_field, setProjectField] = useState("")
+  const [projectName, setProjectName] = useState("") // Add state for project name
   const [loading, setLoading] = useState(true)
 
   // get project information
@@ -42,6 +45,7 @@ const ProjectPage = () => {
         const response = await api.get(`/api/project/${progressive_id}`)
         console.log(response.data)
         setProjectField(response.data.field)
+        setProjectName(response.data.name) // Set the project name from the API response
         console.log(response.data.field)
       } catch (error) {
         console.error("Error fetching project:", error)
@@ -54,6 +58,10 @@ const ProjectPage = () => {
 
   const handleUploadMetabolomicsClick = () => {
     navigate(`/project/${progressive_id}/metabolomics/upload`)
+  }
+
+  const handleUploadMetabolomicsMatrixClick = () => {
+    navigate(`/project/${progressive_id}/metabolomics/matrix-upload`);
   }
 
   const handleUploadProteomicsClick = () => {
@@ -87,14 +95,18 @@ const ProjectPage = () => {
     navigate(targetPath);
   }
 
+  const handleUploadProteomicsMatrixClick = () => {
+    navigate(`/project/${progressive_id}/proteomics/matrix-upload`);
+  };
+
   const handleViewPipelineClick = () => {
     let targetPath = `/project/${progressive_id}/running_pipelines_unknown`;
-    if (project_field == 'metabolomica'){
+    if (project_field === 'metabolomica') {
       targetPath = `/project/${progressive_id}/metabolomics/running_pipelines`;
-    } else if (project_field == 'citofluorimetria'){
-      targetPath=`/project/${progressive_id}/running_pipelines`;
-    } else if (project_field=='proteomica'){
-      targetPath=`/project/${progressive_id}/proteomics/running_pipelines`;
+    } else if (project_field === 'citofluorimetria') {
+      targetPath = `/project/${progressive_id}/running_pipelines`;
+    } else if (project_field === 'proteomica') {
+      targetPath = `/project/${progressive_id}/proteomics/running_pipelines`;
     }
     navigate(targetPath);
   }
@@ -194,9 +206,21 @@ const ProjectPage = () => {
           }}
         >
           <Box sx={{ p: 0 }}>
-            {project_field === "metabolomica" && <MetabolomicsTable projectId={progressive_id} />}
-            {project_field === "citofluorimetria" && <CytometryTable projectId={progressive_id} />}
-            {project_field === "proteomica" && <ProteomicsTable projectId={progressive_id} />}
+            {project_field === "metabolomica" && (
+              <>
+              <MetabolomicsTable projectId={progressive_id} />
+              <MetabolomicsMatrixTable projectId={progressive_id} />
+              </>
+            )}
+            {project_field === "citofluorimetria" && (
+              <CytometryTable projectId={progressive_id} projectName={projectName} />
+            )}
+            {project_field === "proteomica" && (
+              <>
+                <ProteomicsTable projectId={progressive_id} />
+                <ProteomicsMatrixTable projectId={progressive_id} />
+              </>
+            )}
           </Box>
         </Paper>
 
@@ -261,6 +285,7 @@ const ProjectPage = () => {
                     </Typography>
                     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                       {project_field === "metabolomica" && (
+                        <>
                         <Button
                           variant="contained"
                           size="large"
@@ -283,6 +308,28 @@ const ProjectPage = () => {
                         >
                           Upload Metabolomics Data
                         </Button>
+                        <Button
+                            variant="outlined"
+                            size="medium"
+                            startIcon={<UploadFileIcon />}
+                            onClick={handleUploadMetabolomicsMatrixClick}
+                            sx={{
+                              borderColor: getFieldColor(),
+                              color: getFieldColor(),
+                              fontWeight: 500,
+                              py: 1,
+                              borderRadius: 2,
+                              textTransform: "none",
+                              '&:hover': {
+                                borderColor: getFieldColor(),
+                                backgroundColor: getFieldColor() + "08"
+                              }
+                            }}
+                          >
+                            Upload Metabolomics Matrix
+                          </Button>
+                        </>
+
                       )}
                       {project_field === "citofluorimetria" && (
                         <>
@@ -331,28 +378,50 @@ const ProjectPage = () => {
                         </>
                       )}
                       {project_field === "proteomica" && (
-                        <Button
-                          variant="contained"
-                          size="large"
-                          startIcon={<UploadFileIcon />}
-                          onClick={handleUploadProteomicsClick}
-                          sx={{
-                            backgroundColor: getFieldColor(),
-                            color: "white",
-                            fontWeight: 500,
-                            py: 1.5,
-                            borderRadius: 2,
-                            textTransform: "none",
-                            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                            '&:hover': {
+                        <>
+                          <Button
+                            variant="contained"
+                            size="large"
+                            startIcon={<UploadFileIcon />}
+                            onClick={handleUploadProteomicsClick}
+                            sx={{
                               backgroundColor: getFieldColor(),
-                              filter: "brightness(0.9)",
-                              boxShadow: "0 4px 12px rgba(0,0,0,0.15)"
-                            }
-                          }}
-                        >
-                          Upload Proteomics Data
-                        </Button>
+                              color: "white",
+                              fontWeight: 500,
+                              py: 1.5,
+                              borderRadius: 2,
+                              textTransform: "none",
+                              boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                              '&:hover': {
+                                backgroundColor: getFieldColor(),
+                                filter: "brightness(0.9)",
+                                boxShadow: "0 4px 12px rgba(0,0,0,0.15)"
+                              }
+                            }}
+                          >
+                            Upload Proteomics Data
+                          </Button>
+                          <Button
+                            variant="outlined"
+                            size="medium"
+                            startIcon={<UploadFileIcon />}
+                            onClick={handleUploadProteomicsMatrixClick}
+                            sx={{
+                              borderColor: getFieldColor(),
+                              color: getFieldColor(),
+                              fontWeight: 500,
+                              py: 1,
+                              borderRadius: 2,
+                              textTransform: "none",
+                              '&:hover': {
+                                borderColor: getFieldColor(),
+                                backgroundColor: getFieldColor() + "08"
+                              }
+                            }}
+                          >
+                            Upload Proteomics Matrix
+                          </Button>
+                        </>
                       )}
                     </Box>
                   </CardContent>
