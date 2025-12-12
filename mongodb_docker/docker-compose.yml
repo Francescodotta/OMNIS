@@ -1,0 +1,18 @@
+services:
+  mongodb:
+    build: .
+    container_name: omnis_mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - omnis_network
+
+volumes:
+  mongodb_data:
+
+networks:
+  omnis_network:
+    driver: bridge
