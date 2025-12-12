@@ -2,7 +2,10 @@ version: '3.8'
 
 services:
   web:
-    build: .
+    build:
+      context: .
+      args:
+        OPENMS_DEB_URL: ${OPENMS_DEB_URL}  # Passa la variabile da .env al Dockerfile
     container_name: pipeline_microservice
     command: python run.py
     ports:
@@ -14,20 +17,21 @@ services:
       - MONGO_URI_FLOW_CYTOMETRY=${MONGO_URI_FLOW_CYTOMETRY}
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
-      - VIRTUAL_HOST=hpc.cast.unich.it
-      - VIRTUAL_PORT=5002
     volumes:
       - .:/pipeline_microservice
       - ./logs:/pipeline_microservice/logs
-      - /media/datastorage/it_cast/omnis_microservice_db:/media/datastorage/it_cast/omnis_microservice_db
+      - ${DB_DIR}:${DB_DIR}
     depends_on:
       - redis
     networks:
       - pipeline_network
-      - nginx-proxy
+      - omnis_microservice
 
   celery:
-    build: .
+    build:
+      context: .
+      args:
+        OPENMS_DEB_URL: ${OPENMS_DEB_URL}  # Stesso per celery
     container_name: pipeline_celery
     command: celery -A app.celery_app worker --loglevel=info
     environment:
@@ -37,11 +41,12 @@ services:
     volumes:
       - .:/pipeline_microservice
       - ./logs:/pipeline_microservice/logs
-      - /media/datastorage/it_cast/omnis_microservice_db:/media/datastorage/it_cast/omnis_microservice_db
+      - ${DB_DIR}:${DB_DIR}
     depends_on:
       - redis
     networks:
       - pipeline_network
+      - omnis_microservice
 
   redis:
     image: redis:alpine
@@ -56,9 +61,8 @@ services:
 networks:
   pipeline_network:
     driver: bridge
-  nginx-proxy:
-    external: true
-    name: nginx-proxy
+  omnis_microservice:
+    driver: bridge
 
 volumes:
   redis_data:
