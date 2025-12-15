@@ -53,7 +53,9 @@ def flow_cytometry_unserialized(self, data) -> dict:
 
     # Initialize results
     results = {}
-
+    results_dir = os.path.join(FLOW_CYTOMETRY_BASE_PATH, task_id)
+    if task_id not in os.listdir(FLOW_CYTOMETRY_BASE_PATH):
+        os.makedirs(results_dir)
     # Update pipeline status to "in progress"
     pipeline_status = "in progress"
     FlowCytoPipelineRun.update_by_chain_id(task_id, {'status': pipeline_status})
@@ -155,6 +157,47 @@ def flow_cytometry_unserialized(self, data) -> dict:
                     print("Processing step: plot_matrix")
                     matrix_plot_path = visualization.plot_matrix(adata, **parameters)
                     FlowCytoPipelineRun.update_by_chain_id(task_id, {'matrix_plot_path': matrix_plot_path})
+                
+                elif step_name == "select_fcs_file_pairwise_analysis":
+                    progressive_id_list = parameters.get('files', [])
+                    pairs = data_loading.load_control_treatment_maps(progressive_id_list)
+                    print("pairs:", pairs)
+                
+                elif step_name == "pairwise_preprocessing_analysis":
+                    annotated_df = parameters.get('files', [])
+                    pairs = data_loading.load_control_treatment_maps(progressive_id_list)
+                    mean_df = preprocessing.extract_raw_means(annotated_df)
+                    scaled_means_df = preprocessing.apply_standard_scaling(mean_df)
+
+                elif step_name == "outlier_removal":
+                    cleaned_df = preprocessing.remove_outliers_iqr(scaled_means_df)
+
+                elif step_name == "pairwise_analysis":
+                    pairwise_results = pairwise_analysis.compute_pairwise_differences(cleaned_df, pairs)
+                    marker_columns = [col for col in pairwise_results.columns if col not in ['treatment_id', 'control_id']]
+                    metrics_df = pairwise_analysis.compute_statistical_metrics(pairwise_results, marker_columns)
+                    heatmap_df = pairwise_results.set_index('treatment_id')
+                    heatmap_df = heatmap_df.drop(columns=['control_id'], errors='ignore')
+                    # path for heatmap csv
+                    heatmap_difference_path_csv = os.path.join(results_dir, "heatmap_differences.csv")
+                    # path for metrics csv
+                    metrics_path_csv = os.path.join(results_dir, "pairwise_metrics.csv")
+                    # save metrics csv
+                    metrics_df.to_csv(metrics_path_csv)
+                    FlowCytoPipelineRun.update_by_chain_id(task_id, {'pairwise_metrics_path_csv': metrics_path_csv})
+                    # save heatmap csv
+                    heatmap_df.to_csv(heatmap_difference_path_csv)
+                    FlowCytoPipelineRun.update_by_chain_id(task_id, {'heatmap_difference_path_csv': heatmap_difference_path_csv})
+                elif step_name == "visualization_plots":
+                    heatmap_difference_path = visualization.heatmap_differences_visualization(heatmap_df)
+                    FlowCytoPipelineRun.update_by_chain_id(task_id, {'heatmap_difference_path': heatmap_difference_path})
+                    heatmap_consistent_parameters_path = visualization.heatmap_consistent_parameters(heatmap_df)
+                    FlowCytoPipelineRun.update_by_chain_id(task_id, {'heatmap_consistent_parameters_path': heatmap_consistent_parameters_path})
+                    barplot_effect = visualization.barplot_cohen_effect_size_horizontal(metrics_df)
+                    FlowCytoPipelineRun.update_by_chain_id(task_id, {'barplot_effect': barplot_effect})
+                    volcano_plot_path = visualization.volcano_plot_exploratory(metrics_df)
+                    FlowCytoPipelineRun.update_by_chain_id(task_id, {'volcano_plot_path': volcano_plot_path})
+
 
                 else:
                     print(f"Unknown step: {step_name} - skipping")
