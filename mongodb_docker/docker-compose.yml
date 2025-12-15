@@ -16,3 +16,4 @@ volumes:
 networks:
   omnis_network:
     driver: bridge
+    name: omnis_network
