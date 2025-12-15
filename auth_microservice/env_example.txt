@@ -1,0 +1,7 @@
+AUTH_ENV = production
+MONGO_URI_AUTH = mongodb://omnis_mongodb:27017/auth_db
+FLASK_AUTH_PORT = 5000
+FERNET_SECRET_KEY = your_secret_key
+FLOW_CYTOMETRY_SECRET_KEY = your_secret_key
+METABOLOMICS_SECRET_KEY = your_secret_key
+JWT_SECRET_KEY=your_secret_key
