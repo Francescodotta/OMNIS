@@ -41,47 +41,37 @@ The architecture supports horizontal scaling, with services communicating asynch
     ```
 
 
-2. **Environment Configuration**:
-- Create a `.env` file in the root directory with necessary variables (e.g., `MONGO_URI`, API keys, ports).
-- Example:
+2. **Start MongoDB container**:
+  ```bash
+    cd mongodb_docker
+    docker-compose up -d --build
   ```
-  MONGO_URI=mongodb://localhost:27017/omnis
-  FLASK_ENV=development
-  REACT_APP_API_BASE_URL=http://localhost:5000
-  ```
+3. **Populate the .env of auth_microservice**:
+   - Copy the provided `env_example.txt` to `.env` and fill in the required environment variables, including `MONGO_URI_AUTH` pointing to the MongoDB instance.
 
-3. **Build and Run with Docker Compose**:
-- Ensure Docker is running.
-- Run: `docker-compose up --build`
-- This will start MongoDB, all microservices, and the frontend.
+   - You need also to create the following secret keys for encryption and JWT:
+     - `FERNET_SECRET_KEY`
+     - `METABOLOMICS_SECRET_KEY`
+     - `FLOW_CYTOMETRY_SECRET_KEY`
+     - `JWT_SECRET_KEY`
 
-4. **Individual Service Setup** (if not using Docker):
-- **Frontend**: `cd frontend && npm install && npm start`
-- **Microservices**: For each (e.g., metabolomics), `cd <service-dir> && pip install -r requirements.txt && python run.py`
-- Install MongoDB separately if needed.
+     The code to generate the Fernet key and the JWT secret key can be found in the `auth_microservice` folder within the app/private directory. (***crypto.py***,***jwt.py***)
 
-5. **Database Initialization**:
-- MongoDB will be initialized via Docker. Ensure collections for users, projects, and data are set up as per the models.
+     For each microservice, you'll find the .env example file in their respective directories.
 
-## Usage
-- **Access the Application**: Open `http://localhost:3000` (React frontend) in your browser.
-- **User Registration/Login**: Use the auth microservice for account management.
-- **Data Upload**: Upload files via the frontend, specifying project and metadata.
-- **Pipeline Execution**: Configure and run analysis pipelines through the pipeline microservice.
-- **Results Retrieval**: View and download processed data and visualizations.
-- **API Endpoints**: Refer to individual microservice docs (e.g., `/api/v1/project/{id}/flow_cytometry/upload` for cytometry).
+4. **Start Microservices**:
+    - Navigate to each microservice directory (e.g., `auth_microservice`, `metabolomics_microservice`, `flow_cytometry_microservice`, `pipeline_microservice`) and run:
+    ```bash
+    docker-compose up -d --build
+    ```
 
-For detailed API documentation, see the Swagger/OpenAPI specs in each microservice.
+5. **Start Frontend**:
+    ```bash
+    cd omnis_frontend
+    docker-compose up -d --build
+    ```
 
-## Development
-- **Code Structure**: Each microservice has its own directory with `app/`, `models/`, `views/`, etc.
-- **Testing**: Run unit tests with `pytest` in each service.
-- **Contributing**: Fork the repo, create a feature branch, and submit a PR. Follow PEP8 for Python and ESLint for React.
-
-## Troubleshooting
-- **Common Issues**: Check Docker logs (`docker-compose logs`). Ensure ports (e.g., 5001 for prod) are not in use.
-- **File Upload Errors**: Verify filename sanitization (e.g., handle special chars like `#`).
-- **Pipeline Failures**: Check pipeline microservice logs for computation errors.
+In the auth_microservice there is the **create_admin.py** script that allows you to create the first admin user to access the platform. Run it after starting the auth_microservice container.
 
 ## License
 This project is licensed under [MIT License](LICENSE). See the LICENSE file for details.
