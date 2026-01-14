@@ -130,7 +130,14 @@ const UserProjects = () => {
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 3 }}>
             Get started by creating your first project to organize your work.
           </Typography>
-          <Button variant="contained" color="primary" startIcon={<AddCircleIcon />} sx={{ borderRadius: 2 }}>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<AddCircleIcon />}
+            sx={{ borderRadius: 2 }}
+            component={Link}
+            to="/create-project"
+          >
             Create Your First Project
           </Button>
         </Paper>
