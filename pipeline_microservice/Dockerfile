@@ -18,7 +18,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copia e installa i requirements
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-
 # install openms via URL (passare OPENMS_DEB_URL in build)
 ARG OPENMS_DEB_URL
 RUN set -eux; \
