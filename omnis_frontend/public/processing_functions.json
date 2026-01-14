@@ -1,0 +1,358 @@
+{
+  "functions": [
+    {
+      "id": 1,
+      "name": "select_files",
+      "label": "Select Files",
+      "field": "Metabolomics",
+      "parameters": [
+        {
+          "name": "file_paths",
+          "label": "Files",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name":"featurefinder",
+      "label": "Feature Finder",
+      "field": "Metabolomics",
+      "parameters":[{}]
+    },
+    {
+      "id":3,
+      "name":"aligner",
+      "label":"Align Retention Times",
+      "field":"Metabolomics",
+      "parameters":[{}]
+    },
+    {
+      "id":4,
+      "name": "linkingqt",
+      "label": "Link Features by LinkingQT",
+      "field":"Metabolomics",
+      "parameters":[{}]
+    },
+    {
+      "id":5,
+      "name":"ms1_annotation",
+      "label":"MS1 Annotation",
+      "field":"Metabolomics",
+      "parameters":[{}]
+    },
+    {
+      "id":6,
+      "name":"extract_matrix",
+      "label":"Extract Matrix",
+      "field":"Metabolomics",
+      "parameters":[{}]
+    },
+    
+    {
+      "id": 10,
+      "name": "select_fcs_files",
+      "label": "Select FCS Files",
+      "field": "Flow Cytometry",
+      "parameters": [
+        {
+          "name": "files",
+          "label": "FCS Files",
+          "type": "text"
+        }
+      ]
+    },
+
+    {
+      "id": 11,
+      "name": "umap",
+      "label": "UMAP",
+      "field": "Flow Cytometry",
+      "parameters": [
+        {
+          "name": "n_neighbors",
+          "label": "Number of Neighbors",
+          "type": "number"
+        },
+        {
+          "name": "min_dist",
+          "label": "Minimum Distance",
+          "type": "number"
+        }
+      ]
+    },
+
+    {
+      "id": 12,
+      "name": "unsupervised_clustering",
+      "label": "Leiden Clustering",
+      "field": "Flow Cytometry",
+      "parameters": [
+      ]
+    },
+
+    {
+      "id": 13,
+      "name": "flowsom_clustering", 
+      "label": "FlowSOM Clustering",
+      "field": "Flow Cytometry",
+      "parameters": [
+        {
+          "name": "n_clusters",
+          "label": "Number of Clusters",
+          "type": "number"
+        },
+        {
+          "name": "xdim",
+          "label": "X Dimension",
+          "type": "number"
+        },
+        {
+          "name": "ydim",
+          "label": "Y Dimension",
+          "type": "number"
+        }
+      ]
+    },
+
+    {
+      "id": 14,
+      "name": "generate_heatmap_data",
+      "label": "Generate Heatmap Data",
+      "field": "Flow Cytometry",
+      "parameters": [
+      ]
+    },
+
+    {
+      "id":15,
+      "name": "select_spectra",
+      "label": "Select Spectra",
+      "field": "Proteomics",
+      "parameters": [
+        {
+          "name": "lower_rt",
+          "label": "Lower RT",
+          "type": "number"
+        },
+        {
+          "name": "upper_rt",
+          "label": "Upper RT",
+          "type": "number"
+        },
+        {
+          "name": "first_scan",
+          "label": "First Scan",
+          "type": "number"
+        },
+        {
+          "name": "last_scan",
+          "label": "Last Scan",
+          "type": "number"
+        },
+        {
+          "name": "scans_to_ignore",
+          "label": "Ignore Specified Scans",
+          "type": "text"
+        },
+        {
+          "name": "min_peak_count",
+          "label": "Minimum Peak Count",
+          "type": "number"
+        },
+        {
+          "name": "polarity",
+          "label": "Polarity",
+          "type": "number"
+        },
+        {
+          "name": "min_MZ",
+          "label": "Min M/Z",
+          "type": "number"
+        },
+        {
+          "name": "max_MZ",
+          "label": "Max M/z",
+          "type": "number"
+        },
+        {
+          "name":"sn_threshold",
+          "label":"Signal to Noise ratio",
+          "type": "number"
+        }
+      ]
+    },
+
+    {
+      "id": 16,
+      "name": "MSFragger",
+      "label": "MSFragger",
+      "field": "Proteomics",
+      "parameters": [
+        {
+        }
+      ]
+    },
+
+    {
+      "id": 17,
+      "name": "Percolator",
+      "label": "Percolator",
+      "field": "Proteomics",
+      "parameters": [
+        {
+        }
+      ]
+    },
+
+    {
+      "id": 18,
+      "name": "FlashLFQ",
+      "label": "FlashLFQ",
+      "field": "Proteomics",
+      "parameters": [
+        {
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "name": "select_fcs_file_pairwise_analysis",
+      "label": "Select FCS Pairwise Analysis",
+      "field": "Flow Cytometry",
+      "parameters": [
+        {
+          "name": "files",
+          "label": "FCS Files",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "name": "pairwise_preprocessing_analysis",
+      "label": "Preprocess for pairwise analysis",
+      "field": "Flow Cytometry",
+      "parameters": [
+      ]
+    },
+    {
+      "id": 21,
+      "name": "outlier_removal",
+      "label": "Outlier cleaning",
+      "field": "Flow Cytometry",
+      "parameters":[]
+    },
+    {
+      "id": 22,
+      "name": "pairwise_analysis",
+      "label": "Compute Pairwise Analysis",
+      "field":"Flow Cytometry",
+      "parameters":[]
+    },
+    {
+      "id": 24,
+      "name": "plot_cluster",
+      "label": "Visualize Clustering"
+    },
+    {
+      "id": 25,
+      "name": "plot_flowsom_clusters",
+      "label": "Visualize FlowSOM clusters",
+      "field":"Flow Cytometry",
+      "parameters": []
+    },
+    {
+      "id": 26,
+      "name": "plot_sample_id_umap",
+      "label": "Visualize Samples in UMAP",
+      "field":"Flow Cytometry",
+      "parameters":[]
+    },
+    {
+      "id": 27,
+      "name": "plot_umap_markers",
+      "label": "Visualize marker expression in UMAP",
+      "field":"Flow Cytometry",
+      "parameters": []
+    },
+    {
+      "id": 28,
+      "name": "compute_pairwise_differences",
+      "label": "Pairwise Differences",
+      "field":"Flow Cytometry",
+      "parameters": []
+    },
+    {
+      "id": 29,
+      "name": "compute_statistical_metrics",
+      "label": "Pairwise Statistics",
+      "field":"Flow Cytometry",
+      "parameters": []
+    },
+    {
+      "id": 30,
+      "name": "pairwise_visualizations",
+      "label": "Pairwise Visualization",
+      "field":"Flow Cytometry",
+      "parameters": []
+    },
+    {
+      "id":31,
+      "name":"select_raw_matrix",
+      "label": "Select Matrix",
+      "field": "Proteomics",
+      "parameters":[
+        {
+          "name": "matrix_files",
+          "label": "Processed Files",
+          "type": "text"
+        }
+      ]
+
+    },
+    {
+      "id":32,
+      "name": "statistical_analysis",
+      "label": "Compute Statistics",
+      "field":"Proteomics",
+      "parameters": []
+    },
+    {
+      "id":33,
+      "name":"volcano_plot",
+      "label":"Volcano Plot",
+      "field": "Proteomics",
+      "parameters":[]
+    },
+    {
+      "id":34,
+      "name":"select_raw_matrix",
+      "label": "Select Matrix",
+      "field": "Metabolomics",
+      "parameters":[
+        {
+          "name": "matrix_files",
+          "label": "Processed Files",
+          "type": "text"
+        }
+      ]
+
+    },
+    {
+      "id":35,
+      "name": "metabolomics_statistical_analysis",
+      "label": "Compute Statistics",
+      "field":"Metabolomics",
+      "parameters": []
+    },
+    {
+      "id":36,
+      "name":"metabolomics_volcano_plot",
+      "label":"Volcano Plot",
+      "field": "Metabolomics",
+      "parameters":[]
+    }
+    
+  ]
+}

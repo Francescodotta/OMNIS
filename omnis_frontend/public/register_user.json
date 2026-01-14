@@ -1,0 +1,60 @@
+{
+    "title": "User Registration",
+    "type": "object",
+    "properties": {
+      "username": {
+        "type": "string",
+        "title": "Username"
+      },
+      "nome": {
+        "type": "string",
+        "title": "Nome"
+      },
+      "cognome": {
+        "type": "string",
+        "title": "Cognome"
+      },
+      "email": {
+        "type": "string",
+        "title": "Email"
+      },
+      "password": {
+        "type": "string",
+        "title": "Password"
+      },
+      "affiliazione": {
+        "type": "string",
+        "title": "Affiliazione",
+        "enum": ["Università degli Studi 'G. d'Annunzio' Chieti-Pescara"]
+      },
+      "posizione": {
+        "type": "string",
+        "title": "Posizione",
+        "enum": [
+            "Responsabile",
+            "Professore", 
+            "Ricercatore",
+            "Dottorando", 
+            "Tesista",
+            "Tecnico di laboratorio",
+            "Medico"
+    ]
+      },
+      "role": {
+        "type": "string",
+        "title": "Ruolo",
+        "enum": ["admin", "user", "guest"]
+      },
+      "laboratorio": {
+        "type": "string",
+        "title": "Laboratorio",
+        "enum": ["Citometria a Flusso", "Metabolomica", "Genomica"]
+      },
+      "tier": {
+        "type": "string",
+        "title": "Tier",
+        "enum": ["Tier 1", "Tier 2", "Tier 3"]
+      }
+    },
+    "required": ["username", "nome", "cognome", "affiliazione", "posizione", "ruolo", "laboratorio", "tier"]
+  }
