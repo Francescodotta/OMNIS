@@ -6,7 +6,6 @@
 *__pycache__/
 *__pycache__/*
 *.key   
-*.json
 *.csv
 *.png
 *.tsv
@@ -18,3 +17,4 @@
 *.rdb
 *analysis_env/
 tools/
+auth_microservice/*/*.json
