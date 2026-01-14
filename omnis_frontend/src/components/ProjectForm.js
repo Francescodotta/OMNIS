@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom'; // <--- aggiungi questa importazione
 import { Box, Button, Container, TextField, Typography, MenuItem, Divider, InputAdornment, Paper } from "@mui/material"
 import { Science, Description, Title, Biotech, Balance} from "@mui/icons-material"
 import api from '../utils/Api';
@@ -10,6 +11,7 @@ const ProjectForm = () => {
     description: '',
     field: ''
   });
+  const navigate = useNavigate(); // <--- aggiungi questa riga
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -22,9 +24,9 @@ const ProjectForm = () => {
   const handleSubmit = async (event) => {
     event.preventDefault();
     try {
-      // Logica per inviare i dati del form al backend
       await api.post('/api/project', formData);
       console.log('Progetto creato:', formData);
+      navigate('/user'); // <--- reindirizza alla pagina dell'utente
     } catch (error) {
       console.error('Errore nella creazione del progetto:', error);
     }
