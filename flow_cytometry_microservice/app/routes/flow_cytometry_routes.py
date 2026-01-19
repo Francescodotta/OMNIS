@@ -230,6 +230,34 @@ def get_pipeline_umap_results(project_id, pipeline_id):
     result, status_code = fcv.get_fc_pipeline_umap_results(project_id, pipeline_id, user)
     return result, status_code
 
+
+@bp.route('/api/v1/project/<project_id>/pipeline_results/<pipeline_id>/cohen_kappa', methods=['GET'])
+@jwt_required()
+def get_pipeline_cohen_kappa_results(project_id, pipeline_id):
+    user = get_jwt_identity()
+    print(pipeline_id, project_id)
+    result, status_code = fcv.get_fc_pipeline_cohen(project_id, pipeline_id, user)
+    return result, status_code
+
+# get volcano plot results
+@bp.route('/api/v1/project/<project_id>/pipeline_results/<pipeline_id>/volcano_plot', methods=['GET'])
+@jwt_required()
+def get_pipeline_volcano_plot_results(project_id, pipeline_id):
+    user = get_jwt_identity()
+    print(pipeline_id, project_id)
+    result, status_code = fcv.get_fc_pipeline_volcano(project_id, pipeline_id, user)
+    return result, status_code
+
+# get heatmap differences results
+@bp.route('/api/v1/project/<project_id>/pipeline_results/<pipeline_id>/heatmap_differences', methods=['GET'])
+@jwt_required()
+def get_pipeline_heatmap_differences_results(project_id, pipeline_id):
+    user = get_jwt_identity()
+    print(pipeline_id, project_id)
+    result, status_code = fcv.get_fc_pipeline_heatmap_differences(project_id, pipeline_id, user)
+    return result, status_code
+
+
 @bp.route('/api/v1/project/<project_id>/pipeline/<pipeline_id>', methods=['DELETE'])
 @jwt_required()
 def delete_pipeline_by_progressive_id(project_id, pipeline_id):

@@ -1203,3 +1203,180 @@ def delete_pipelinerun_by_progressive_id(project_id, progressive_id, username):
     except Exception as e:
         logger.error(f"Error deleting pipeline run {progressive_id}: {str(e)}")
         return {'error': f'Error deleting pipeline run: {str(e)}'}, 500
+
+
+
+def get_fc_pipeline_cohen(project_id, progressive_id, username):
+    # permission checks
+    project = ProjectModel.find_by_progressive_id(project_id)
+    if not project:
+        logger.error(f"Project not found: {project_id} by user {username}")
+        return jsonify({"error": "Project not found"}), 404
+
+    user = UserModel.find_by_username(username)
+    if user is None:
+        logger.error(f"User not found: {username}")
+        return jsonify({"error": "User not found"}), 404
+
+    membership = MemberModel.find_by_user_id_project_id(int(user['progressive_id']), int(project_id))
+    if membership is None:
+        logger.error(f"User does not have permissions for project: {project_id}")
+        return jsonify({"error": "User does not have permissions for project"}), 403
+
+    pipeline_run = FlowCytoPipelineRun.find_by_progressive_id(progressive_id)
+    if not pipeline_run:
+        logger.error(f"Pipeline run not found: {progressive_id} by user {username}")
+        return jsonify({"error": "Pipeline run not found"}), 404
+
+    # prefer the pairwise metrics CSV produced by pairwise analysis
+    cohen_path = pipeline_run.get("pairwise_metrics_path_csv") or pipeline_run.get("cohen_data_path") or pipeline_run.get("cohen_path")
+    if not cohen_path or not os.path.exists(cohen_path):
+        logger.info(f"Cohen metrics file not available for pipeline {progressive_id}")
+        return jsonify({"data": None}), 200
+
+    try:
+        sep = '\t' if cohen_path.lower().endswith(('.tsv', '.txt')) else ','
+        df = pd.read_csv(cohen_path, sep=sep)
+        # sample if too large
+        if len(df) > 20000:
+            df = df.sample(n=20000, random_state=4242)
+        cohen_data = df.to_dict(orient="records")
+        logger.info(f"Cohen data retrieved for project {project_id} by user {username}")
+        return jsonify({"data": cohen_data}), 200
+    except Exception as e:
+        logger.error(f"Error reading Cohen data {cohen_path}: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+def get_fc_pipeline_volcano(project_id, progressive_id, username):
+    # permission checks
+    project = ProjectModel.find_by_progressive_id(project_id)
+    if not project:
+        logger.error(f"Project not found: {project_id} by user {username}")
+        return jsonify({"error": "Project not found"}), 404
+
+    user = UserModel.find_by_username(username)
+    if user is None:
+        logger.error(f"User not found: {username}")
+        return jsonify({"error": "User not found"}), 404
+
+    membership = MemberModel.find_by_user_id_project_id(int(user['progressive_id']), int(project_id))
+    if membership is None:
+        logger.error(f"User does not have permissions for project: {project_id}")
+        return jsonify({"error": "User does not have permissions for project"}), 403
+
+    pipeline_run = FlowCytoPipelineRun.find_by_progressive_id(progressive_id)
+    if not pipeline_run:
+        logger.error(f"Pipeline run not found: {progressive_id} by user {username}")
+        return jsonify({"error": "Pipeline run not found"}), 404
+
+    # Check for CSV data first, then for an image/plot path
+    csv_path = pipeline_run.get("volcano_data_path") or pipeline_run.get("csv_volcano_data")
+    plot_path = pipeline_run.get("volcano_plot_path") or pipeline_run.get("volcano_path")
+
+    if csv_path and os.path.exists(csv_path):
+        try:
+            sep = '\t' if csv_path.lower().endswith(('.tsv', '.txt')) else ','
+            df = pd.read_csv(csv_path, sep=sep)
+            if len(df) > 20000:
+                df = df.sample(n=20000, random_state=4242)
+            volcano_data = df.to_dict(orient="records")
+            logger.info(f"Volcano CSV data retrieved for project {project_id} by user {username}")
+            return jsonify({"data": volcano_data}), 200
+        except Exception as e:
+            logger.error(f"Error reading volcano CSV {csv_path}: {str(e)}")
+            return jsonify({"error": str(e)}), 500
+
+    if plot_path and os.path.exists(plot_path):
+        # return info about the image (frontend can request the file endpoint or use a dedicated route)
+        logger.info(f"Volcano plot available for pipeline {progressive_id}")
+        return jsonify({"data": {"image": os.path.basename(plot_path), "path": plot_path}}), 200
+
+    logger.info(f"No volcano results available for pipeline {progressive_id}")
+    return jsonify({"data": None}), 200
+
+def get_fc_pipeline_heatmap_differences(project_id, progressive_id, username):
+    # permission checks
+    project = ProjectModel.find_by_progressive_id(project_id)
+    if not project:
+        logger.error(f"Project not found: {project_id} by user {username}")
+        return jsonify({"error": "Project not found"}), 404
+
+    user = UserModel.find_by_username(username)
+    if user is None:
+        logger.error(f"User not found: {username}")
+        return jsonify({"error": "User not found"}), 404
+
+    membership = MemberModel.find_by_user_id_project_id(int(user['progressive_id']), int(project_id))
+    if membership is None:
+        logger.error(f"User does not have permissions for project: {project_id}")
+        return jsonify({"error": "User does not have permissions for project"}), 403
+
+    pipeline_run = FlowCytoPipelineRun.find_by_progressive_id(progressive_id)
+    if not pipeline_run:
+        logger.error(f"Pipeline run not found: {progressive_id} by user {username}")
+        return jsonify({"error": "Pipeline run not found"}), 404
+
+    # prefer the CSV differences path generated in pairwise analysis
+    heatmap_csv = pipeline_run.get("heatmap_difference_path_csv") or pipeline_run.get("heatmap_differences") or pipeline_run.get("heatmap_data_path")
+    print(heatmap_csv)
+    # also support image path(s)
+    heatmap_image = pipeline_run.get("heatmap_difference_path") or pipeline_run.get("stat_heatmap_path")
+
+    if heatmap_csv and os.path.exists(heatmap_csv):
+        try:
+            sep = '\t' if heatmap_csv.lower().endswith(('.tsv', '.txt')) else ','
+            df = pd.read_csv(heatmap_csv, sep=sep)
+            if len(df) > 20000:
+                df = df.sample(n=20000, random_state=4242)
+            heatmap_diff_data = df.to_dict(orient="records")
+            logger.info(f"Heatmap difference CSV retrieved for project {project_id} by user {username}")
+            return jsonify({"data": heatmap_diff_data}), 200
+        except Exception as e:
+            logger.error(f"Error reading heatmap CSV {heatmap_csv}: {str(e)}")
+            return jsonify({"error": str(e)}), 500
+
+    if heatmap_image:
+        # if image exists, return its filename/path for frontend to request via file endpoint
+        logger.info(f"Heatmap image available for pipeline {progressive_id}")
+        return jsonify({"data": {"image": os.path.basename(heatmap_image), "path": heatmap_image}}), 200
+
+    logger.info(f"No heatmap differences available for pipeline {progressive_id}")
+    return jsonify({"data": None}), 200
+
+# views to get the fcs heatmap data
+def get_fc_pipeline_run_heatmap_results_views(project_id, progressive_id, username):
+    # check the project id exists
+    project = ProjectModel.find_by_progressive_id(project_id)
+    if not project:
+        logger.error(f"Project not found: {project_id} by user {username}")
+        return jsonify({"error": "Project not found"}), 404
+    
+    # check the user
+    user = UserModel.find_by_username(username)
+    if user is None:
+        logger.error(f"User not found: {username}")
+        return jsonify({"error": "User not found"}), 404
+    
+    # check the membership of the user
+    membership = MemberModel.find_by_user_id_project_id(int(user['progressive_id']), int(project_id))
+    if membership is None:
+        logger.error(f"User does not have permissions for project: {project_id}")
+        return jsonify({"error": "User does not have permissions for project"}), 403
+    
+    # get the pipeline run by the progressive id
+    pipeline_run = FlowCytoPipelineRun.find_by_progressive_id(progressive_id)
+    
+    # check if the pipeline run exists
+    if not pipeline_run:
+        logger.error(f"Pipeline run not found: {progressive_id} by user {username}")
+        return jsonify({"error": "Pipeline run not found"}), 404
+    
+    # get the heatmap csv file
+    df = pd.read_csv(pipeline_run["heatmap_data_path"])
+        
+    # transform data into a dictionary
+    heatmap_data = df.to_dict(orient="records")
+    
+    logger.info(f"Heatmap data retrieved for project {project_id} by user {username}")
+    
+    return jsonify({"data": heatmap_data}), 200
