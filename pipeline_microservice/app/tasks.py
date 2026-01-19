@@ -54,8 +54,8 @@ def flow_cytometry_unserialized(self, data) -> dict:
     # Initialize results
     results = {}
     results_dir = os.path.join(FLOW_CYTOMETRY_BASE_PATH, task_id)
-    if task_id not in os.listdir(FLOW_CYTOMETRY_BASE_PATH):
-        os.makedirs(results_dir)
+    os.makedirs(results_dir, exist_ok=True)
+
     # Update pipeline status to "in progress"
     pipeline_status = "in progress"
     FlowCytoPipelineRun.update_by_chain_id(task_id, {'status': pipeline_status})
@@ -77,6 +77,7 @@ def flow_cytometry_unserialized(self, data) -> dict:
                     file_paths = [f['file_path'] for f in files_info]
                     filenames = [f['filename'] for f in files_info]
                     metadata_list = [f['metadata'] for f in files_info]
+                    print(f"file_paths: {file_paths}")
                     
                     # 🦍 FIX: Raccogli tutte le chiavi presenti in almeno un file
                     all_keys = set()
@@ -157,15 +158,14 @@ def flow_cytometry_unserialized(self, data) -> dict:
                     print("Processing step: plot_matrix")
                     matrix_plot_path = visualization.plot_matrix(adata, **parameters)
                     FlowCytoPipelineRun.update_by_chain_id(task_id, {'matrix_plot_path': matrix_plot_path})
-                
+
                 elif step_name == "select_fcs_file_pairwise_analysis":
                     progressive_id_list = parameters.get('files', [])
                     pairs = data_loading.load_control_treatment_maps(progressive_id_list)
                     print("pairs:", pairs)
                 
                 elif step_name == "pairwise_preprocessing_analysis":
-                    annotated_df = parameters.get('files', [])
-                    pairs = data_loading.load_control_treatment_maps(progressive_id_list)
+                    annotated_df = preprocessing.load_fcs_files_as_df(pairs)
                     mean_df = preprocessing.extract_raw_means(annotated_df)
                     scaled_means_df = preprocessing.apply_standard_scaling(mean_df)
 
@@ -188,7 +188,7 @@ def flow_cytometry_unserialized(self, data) -> dict:
                     # save heatmap csv
                     heatmap_df.to_csv(heatmap_difference_path_csv)
                     FlowCytoPipelineRun.update_by_chain_id(task_id, {'heatmap_difference_path_csv': heatmap_difference_path_csv})
-                elif step_name == "visualization_plots":
+                elif step_name == "pairwise_visualizations":
                     heatmap_difference_path = visualization.heatmap_differences_visualization(heatmap_df)
                     FlowCytoPipelineRun.update_by_chain_id(task_id, {'heatmap_difference_path': heatmap_difference_path})
                     heatmap_consistent_parameters_path = visualization.heatmap_consistent_parameters(heatmap_df)
@@ -197,7 +197,6 @@ def flow_cytometry_unserialized(self, data) -> dict:
                     FlowCytoPipelineRun.update_by_chain_id(task_id, {'barplot_effect': barplot_effect})
                     volcano_plot_path = visualization.volcano_plot_exploratory(metrics_df)
                     FlowCytoPipelineRun.update_by_chain_id(task_id, {'volcano_plot_path': volcano_plot_path})
-
 
                 else:
                     print(f"Unknown step: {step_name} - skipping")
