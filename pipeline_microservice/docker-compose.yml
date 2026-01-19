@@ -6,10 +6,12 @@ services:
       args:
         OPENMS_DEB_URL: ${OPENMS_DEB_URL}  # Passa la variabile da .env al Dockerfile
     container_name: pipeline_microservice
-    command: python run.py
+    command: python -m flask run --host=0.0.0.0 --port=5002
     ports:
       - "5002:5002"
     environment:
+      - PYTHONUNBUFFERED=1
+      - FLASK_DEBUG=1
       - PIPELINE_ENV=${PIPELINE_ENV}
       - MONGO_URI_AUTH=${MONGO_URI_AUTH}
       - MONGO_URI_METABOLOMICS=${MONGO_URI_METABOLOMICS}
