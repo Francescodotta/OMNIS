@@ -18,3 +18,4 @@
 *analysis_env/
 tools/
 auth_microservice/*/*.json
+flow_cytometry_microservice/*/*.json
