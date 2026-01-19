@@ -12,6 +12,9 @@ services:
       - MONGO_URI_FLOW_CYTOMETRY=${MONGO_URI_FLOW_CYTOMETRY}
       - FLOW_CYTOMETRY_FLASK_RUN_DEVELOPMENT_PORT=${FLOW_CYTOMETRY_FLASK_RUN_DEVELOPMENT_PORT}
       - FLOW_CYTOMETRY_FLASK_RUN_PRODUCTION_PORT=${FLOW_CYTOMETRY_FLASK_RUN_PRODUCTION_PORT}
+      - PIPELINE_SERVICE_URL=http://pipeline_microservice:5002
+      - NO_PROXY=pipeline_microservice,localhost,127.0.0.1,172.23.0.7
+      - no_proxy=pipeline_microservice,localhost,127.0.0.1,172.23.0.7
     volumes:
       - ./logs:/flow_cytometry_microservice/logs
       - ${DB_DIR}:${DB_DIR}
