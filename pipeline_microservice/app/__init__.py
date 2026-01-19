@@ -30,10 +30,6 @@ app.config.update(
 app.config["MONGO_URI_FLOW_CYTOMETRY"] = os.getenv("MONGO_URI_FLOW_CYTOMETRY")
 mongo_flow_cytometry_pipeline = PyMongo(app, uri=app.config["MONGO_URI_FLOW_CYTOMETRY"])
 
-# proteomics config
-app.config["MONGO_URI_PROTEOMICS"] = os.getenv("MONGO_URI_PROTEOMICS")
-mongo_proteomics_pipeline = PyMongo(app, uri=app.config["MONGO_URI_PROTEOMICS"])
-
 # metabolomics config
 app.config["MONGO_URI_METABOLOMICS"] = os.getenv("MONGO_URI_METABOLOMICS")
 mongo_metabolomics_pipeline = PyMongo(app, uri=app.config["MONGO_URI_METABOLOMICS"])

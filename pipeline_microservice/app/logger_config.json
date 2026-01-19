@@ -1,0 +1,51 @@
+{
+    "version": 1,
+    "disable_existing_loggers": false,
+    "formatters": {
+        "json": {
+            "format": "{\"time\": \"%(asctime)s\", \"level\": \"%(levelname)s\", \"message\": \"%(message)s\", \"module\": \"%(module)s\", \"function\": \"%(funcName)s\"}"
+        },
+        "simple": {
+            "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        }
+    },
+    "filters": {
+        "custom_info_filter": {
+            "()": "logging.Filter",
+            "name": "custom_info_logger"
+        }
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "level": "WARNING",
+            "formatter": "simple"
+        },
+        "custom_info_handler": {
+            "class": "logging.FileHandler",
+            "level": "INFO",
+            "formatter": "json",
+            "filename": "logs/custom_info_log.json",
+            "mode": "a",
+            "filters": ["custom_info_filter"]
+        },
+        "error_file_handler": {
+            "class": "logging.FileHandler",
+            "level": "ERROR",
+            "formatter": "json",
+            "filename": "logs/error_log.json",
+            "mode": "a"
+        }
+    },
+    "loggers": {
+        "custom_info_logger": {
+            "level": "INFO",
+            "handlers": ["custom_info_handler"],
+            "propagate": false
+        }
+    },
+    "root": {
+        "level": "DEBUG",
+        "handlers": ["console", "error_file_handler"]
+    }
+}

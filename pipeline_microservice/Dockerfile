@@ -17,7 +17,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Copia e installa i requirements
 COPY requirements.txt .
+RUN git config --global http.proxy "" \
+ && git config --global https.proxy ""
 RUN pip install --no-cache-dir -r requirements.txt
+
 # install openms via URL (passare OPENMS_DEB_URL in build)
 ARG OPENMS_DEB_URL
 RUN set -eux; \
@@ -29,11 +32,14 @@ RUN set -eux; \
       rm -rf /var/lib/apt/lists/*; \
     fi
 
+# Crea directory per i logs PRIMA di copiare il codice
+RUN mkdir -p logs && chmod -R 777 logs
+
 # Copia il codice dell'applicazione
 COPY . .
 
-# Crea directory per i logs
-RUN mkdir -p logs
+# Assicurati che i permessi siano corretti
+RUN chmod -R 777 logs
 
 EXPOSE 5002
 
