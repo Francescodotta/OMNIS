@@ -29,11 +29,14 @@ import {
   CardHeader,
   CardContent,
   Checkbox,
+  Select,
+  MenuItem,
 } from "@mui/material"
 import DeleteIcon from "@mui/icons-material/Delete"
 import SearchIcon from "@mui/icons-material/Search"
 import ScienceIcon from "@mui/icons-material/Science"
 import WarningIcon from "@mui/icons-material/Warning"
+import VisibilityIcon from "@mui/icons-material/Visibility"
 
 
 const CytometryTable = ({ projectId, projectName }) => {
@@ -46,6 +49,9 @@ const CytometryTable = ({ projectId, projectName }) => {
   const [selectedExperiments, setSelectedExperiments] = useState([])
   const [confirmationText, setConfirmationText] = useState("")
   const [searchTerm, setSearchTerm] = useState("")
+  const [savingControl, setSavingControl] = useState({})
+
+  const navigate = useNavigate()
 
   // Wrap fetchExperiments in useCallback
   const fetchExperiments = useCallback(async () => {
@@ -116,6 +122,30 @@ const CytometryTable = ({ projectId, projectName }) => {
   const handleOpenDeleteDialog = (id) => {
     setSelectedExperiments([id]) // Set the selected experiment for deletion
     setDeleteDialogOpen(true)   // Open the delete dialog
+  }
+
+  const handleSetControl = async (experimentId, controlId) => {
+    setSavingControl((prev) => ({ ...prev, [experimentId]: true }))
+    try {
+      await api.put(
+        `/api/v1/project/${projectId}/flow_cytometry/${experimentId}/control`,
+        { control_id: controlId }
+      )
+      setMessage("Control sample updated successfully")
+      fetchExperiments()
+    } catch (err) {
+      let errorMsg = "Unknown error";
+      if (err.response && err.response.data && err.response.data.error) {
+        errorMsg = err.response.data.error;
+      } else if (err.response && err.response.status) {
+        errorMsg = `API error: ${err.response.status}`;
+      } else if (err.message) {
+        errorMsg = err.message;
+      }
+      setError(errorMsg)
+    } finally {
+      setSavingControl((prev) => ({ ...prev, [experimentId]: false }))
+    }
   }
 
   if (loading) {
@@ -213,6 +243,7 @@ const CytometryTable = ({ projectId, projectName }) => {
                   </TableCell>
                   <TableCell sx={{ bgcolor: "background.default", fontWeight: "bold" }}>ID</TableCell>
                   <TableCell sx={{ bgcolor: "background.default", fontWeight: "bold" }}>Name</TableCell>
+                  <TableCell sx={{ bgcolor: "background.default", fontWeight: "bold" }}>Control Sample</TableCell>
                   <TableCell sx={{ bgcolor: "background.default", fontWeight: "bold", width: 150 }}>
                     Actions
                   </TableCell>
@@ -229,7 +260,40 @@ const CytometryTable = ({ projectId, projectName }) => {
                     </TableCell>
                     <TableCell>{experiment.progressive_id}</TableCell>
                     <TableCell>{experiment.filename}</TableCell>
+                    {/* Control Sample Select */}
                     <TableCell>
+                      <Select
+                        value={experiment.control_id ?? ""}
+                        onChange={(e) => handleSetControl(experiment.progressive_id, e.target.value)}
+                        size="small"
+                        disabled={Boolean(savingControl[experiment.progressive_id])}
+                        displayEmpty
+                        fullWidth
+                      >
+                        <MenuItem value="">None</MenuItem>
+                        {experiments
+                          .filter((ex) => ex.progressive_id !== experiment.progressive_id)
+                          .map((ex) => (
+                            <MenuItem key={ex.progressive_id} value={ex.progressive_id}>
+                              {ex.filename}
+                            </MenuItem>
+                          ))}
+                      </Select>
+                    </TableCell>
+                    <TableCell>
+                      {/* Gating strategies action */}
+                      <Tooltip title="View Gating Strategies">
+                        <IconButton
+                          size="small"
+                          color="primary"
+                          onClick={() =>
+                            navigate(`/project/${projectId}/fcs_object/${experiment.progressive_id}/gatingStrategies`)
+                          }
+                        >
+                          <VisibilityIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      {/* Delete action */}
                       <Tooltip title="Delete Experiment">
                         <IconButton
                           size="small"

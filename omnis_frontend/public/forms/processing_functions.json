@@ -277,22 +277,8 @@
       "parameters": []
     },
     {
-      "id": 28,
-      "name": "compute_pairwise_differences",
-      "label": "Pairwise Differences",
-      "field":"Flow Cytometry",
-      "parameters": []
-    },
-    {
-      "id": 29,
-      "name": "compute_statistical_metrics",
-      "label": "Pairwise Statistics",
-      "field":"Flow Cytometry",
-      "parameters": []
-    },
-    {
       "id": 30,
-      "name": "pairwise_visualizations",
+      "name": "visualization_plots",
       "label": "Pairwise Visualization",
       "field":"Flow Cytometry",
       "parameters": []
