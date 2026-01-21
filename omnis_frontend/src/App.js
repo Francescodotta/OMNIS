@@ -112,7 +112,6 @@ function App() {
 
             {/* STANDARDIZED FIELDS */}
             <Route path='/project/:projectId/standardized-fields' element={<ProtectedRoute component={StandardizedFields}/>}/>
-
             {/* Debugging route */}
             <Route path='/project/:projectId/flow_cytometry/report/:pipelineId' element={<ProtectedRoute component={ReportUmap}/>}/>
             {/* Metabolomics final Report */}

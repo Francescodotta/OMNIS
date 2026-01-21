@@ -27,7 +27,7 @@ const ReportUmap = () => {
   useEffect(() => {
     const fetchUmap = async () => {
       try {
-        const res = await flowCytometryApi.get(`/flow_cytometry/api/v1/project/${projectId}/pipeline_results/${pipelineId}/umap`);
+        const res = await flowCytometryApi.get(`/api/v1/project/${projectId}/pipeline_results/${pipelineId}/umap`);
         setUmapData(res.data?.data ?? null);
       } catch (err) {
         setError(err.response?.data?.error || err.message || 'Error fetching UMAP');
@@ -139,7 +139,7 @@ const ReportUmap = () => {
     if (index === 0 && umapData === null) {
       setLoadingTab(true);
       try {
-        const res = await flowCytometryApi.get(`/flow_cytometry/api/v1/project/${projectId}/pipeline_results/${pipelineId}/umap`);
+        const res = await flowCytometryApi.get(`/api/v1/project/${projectId}/pipeline_results/${pipelineId}/umap`);
         setUmapData(res.data?.data ?? null);
       } catch (err) {
         setError(err.response?.data?.error || err.message || "Error fetching UMAP");
