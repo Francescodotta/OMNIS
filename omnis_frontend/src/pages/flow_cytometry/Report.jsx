@@ -58,35 +58,68 @@ const ReportUmap = () => {
     if (!route) return null;
     try {
       const res = await flowCytometryApi.get(route);
-      console.log('Fetched raw', shortKey, res.data);
-
-      // normalizza l'array dei record: priorità a res.data.data, poi res.data.rows, poi res.data (se è array)
-      const raw = res.data;
+      
+      let raw = res.data;
+      
+      // 🔧 FIX CRITICO: Se res.data è una stringa, puliscila da NaN/Infinity
+      if (typeof raw === 'string') {
+        console.log(`${shortKey}: received string (${raw.length} chars), cleaning NaN/Infinity...`);
+        try {
+          // Sostituisci NaN, Infinity, -Infinity con null (JSON-valid)
+          raw = raw
+            .replace(/:\s*NaN\s*([,}])/g, ': null$1')
+            .replace(/:\s*Infinity\s*([,}])/g, ': null$1')
+            .replace(/:\s*-Infinity\s*([,}])/g, ': null$1');
+          
+          raw = JSON.parse(raw);
+          console.log(`${shortKey}: successfully parsed cleaned JSON`, raw);
+        } catch (parseErr) {
+          console.error(`${shortKey}: failed to parse JSON string after cleaning`, parseErr);
+          console.error(`Raw string preview:`, raw.substring(0, 500));
+          return null;
+        }
+      }
+      
+      console.log(`Fetched raw ${shortKey}:`, raw);
+      
       if (!raw) return null;
 
+      // 🔧 FIX: Gestione corretta delle risposte del backend
+      // Caso 1: raw è direttamente un array
       if (Array.isArray(raw)) {
+        console.log(`${shortKey}: direct array, length=${raw.length}`);
         return { data: raw };
       }
-      if (Array.isArray(raw.data)) {
+      
+      // Caso 2: raw.data è un array (risposta standard del backend: {"data": [...]})
+      if (raw.data && Array.isArray(raw.data)) {
+        console.log(`${shortKey}: found data array, length=${raw.data.length}`);
         return { data: raw.data };
       }
-      if (Array.isArray(raw.rows)) {
-        return { data: raw.rows };
+
+      // Caso 3: raw.data è un oggetto con path (immagine)
+      if (raw.data && typeof raw.data === 'object' && !Array.isArray(raw.data) && raw.data.path) {
+        console.log(`${shortKey}: found data.path=${raw.data.path}`);
+        return { path: raw.data.path };
       }
-      // gestione caso annidato e altri wrapper possibili
-      if (raw.data && typeof raw.data === 'object' && Array.isArray(raw.data.data)) {
-        return { data: raw.data.data };
-      }
-      // se è un oggetto con campo "path"
+
+      // Caso 4: raw.path è una stringa (immagine diretta)
       if (typeof raw.path === 'string') {
+        console.log(`${shortKey}: found direct path=${raw.path}`);
         return { path: raw.path };
       }
 
-      // nulla riconosciuto
-      console.log(`fetchResultEndpoint(${shortKey}): no array/path found`, raw);
+      // Caso 5: raw.data è null (nessun dato disponibile)
+      if (raw.data === null || raw.data === undefined) {
+        console.log(`${shortKey}: backend returned null/undefined data`);
+        return null;
+      }
+
+      // Nulla riconosciuto
+      console.warn(`fetchResultEndpoint(${shortKey}): unrecognized format`, raw);
       return null;
     } catch (err) {
-      console.warn(`Error fetching ${shortKey}`, err);
+      console.error(`Error fetching ${shortKey}:`, err);
       return null;
     }
   };
@@ -100,8 +133,17 @@ const ReportUmap = () => {
       const result = await fetchResultEndpoint('volcano');
       console.log("Report: fetched volcano result:", result);
       if (result) {
-        if (result.path) setVolcanoPath(result.path);
-        else if (Array.isArray(result.data)) setVolcanoData(result.data);
+        // 🦍 FIX: Gestisci correttamente i due formati di risposta
+        if (result.data) {
+          if (Array.isArray(result.data)) {
+            // È un array di dati CSV
+            setVolcanoData(result.data);
+            console.log("Report: volcanoData set, rows:", result.data.length);
+          } else if (result.data.path) {
+            // È un oggetto con path dell'immagine
+            setVolcanoPath(result.data.path);
+          }
+        }
       }
       setLoadingTab(false);
     }
@@ -112,24 +154,30 @@ const ReportUmap = () => {
       const result = await fetchResultEndpoint('cohen');
       console.log("Report: fetched cohen result:", result);
       if (result) {
-        if (result.path) setCohenPath(result.path);
-        else if (Array.isArray(result.data)) setCohenData(result.data);
+        // 🦍 FIX: Stesso pattern per Cohen
+        if (result.data) {
+          if (Array.isArray(result.data)) {
+            setCohenData(result.data);
+          } else if (result.data.path) {
+            setCohenPath(result.data.path);
+          }
+        }
       }
       setLoadingTab(false);
     }
 
-    // Heatmap (assicuriamoci di passare l'array res.data.data esattamente come lo hai fornito)
+    // Heatmap
     if (index === 5 && heatmapDiffData === null && heatmapPath === null) {
       setLoadingTab(true);
       const result = await fetchResultEndpoint('heatmap_stats');
       console.log("Report: fetched heatmap_stats result:", result);
       if (result) {
-        if (result.path) {
-          setHeatmapPath(result.path);
-        } else if (Array.isArray(result.data)) {
-          // PASSO proprio l'array contenuto in "data" così come richiesto
+        // ✅ FIX: result è già { data: [...] } oppure { path: "..." }
+        if (result.data && Array.isArray(result.data)) {
           setHeatmapDiffData(result.data);
           console.log("Report: heatmapDiffData set, rows:", result.data.length);
+        } else if (result.path) {
+          setHeatmapPath(result.path);
         }
       }
       setLoadingTab(false);

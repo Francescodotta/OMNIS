@@ -1,131 +1,228 @@
-import React from "react";
+import React, { useState, useMemo } from "react";
 import Plot from "react-plotly.js";
-import { Card, CardHeader, CardContent, Typography } from "@mui/material";
+import { Card, CardHeader, CardContent, Typography, FormControl, InputLabel, Select, MenuItem, Box } from "@mui/material";
 
 const StatHeatmap = ({ data }) => {
-  // supporta: data = [{...}, ...] oppure data = { data: [{...}, ...] } o data = { rows: [...] }
-  const rows = (() => {
+  const [viewMode, setViewMode] = useState("all");
+  const [consistencyFilter, setConsistencyFilter] = useState("all");
+
+  const rows = useMemo(() => {
     if (!data) return [];
     if (Array.isArray(data)) return data;
     if (Array.isArray(data.data)) return data.data;
     if (Array.isArray(data.rows)) return data.rows;
     return [];
-  })();
+  }, [data]);
 
-  // logging health status (use console.log per essere sicuri di vederli nella console)
+  const treatmentKey = useMemo(() => {
+    if (rows.length === 0) return "treatment_id";
+    const treatmentKeyCandidates = ["treatment_id", "treatment", "group", "label", "comparison"];
+    const allKeys = Object.keys(rows[0]);
+    return allKeys.find(k => treatmentKeyCandidates.includes(k.toLowerCase())) || "treatment_id";
+  }, [rows]);
+
+  const allNumericKeys = useMemo(() => {
+    if (rows.length === 0) return [];
+    const allKeys = Object.keys(rows[0]);
+    return allKeys.filter((k) => {
+      if (k.toLowerCase() === treatmentKey.toLowerCase()) return false;
+      for (let i = 0; i < rows.length; i++) {
+        const v = rows[i][k];
+        if (v !== undefined && v !== null && v !== "") return true;
+      }
+      return false;
+    });
+  }, [rows, treatmentKey]);
+
+  const markerStats = useMemo(() => {
+    const stats = {};
+    
+    allNumericKeys.forEach(marker => {
+      const values = rows.map(row => {
+        const v = row[marker];
+        if (v === null || v === undefined) return null;
+        const n = typeof v === "number" ? v : Number(v);
+        return Number.isFinite(n) ? n : null;
+      }).filter(v => v !== null);
+
+      const allPositive = values.length > 0 && values.every(v => v > 0);
+      const allNegative = values.length > 0 && values.every(v => v < 0);
+      const hasPositive = values.some(v => v > 0);
+      const hasNegative = values.some(v => v < 0);
+
+      stats[marker] = {
+        alwaysUp: allPositive,
+        alwaysDown: allNegative,
+        hasPositive,
+        hasNegative,
+        valueCount: values.length
+      };
+    });
+
+    return stats;
+  }, [rows, allNumericKeys]);
+
+  const filteredMarkers = useMemo(() => {
+    let filtered = [...allNumericKeys];
+
+    if (viewMode === "upregulated") {
+      filtered = filtered.filter(m => markerStats[m]?.hasPositive);
+    } else if (viewMode === "downregulated") {
+      filtered = filtered.filter(m => markerStats[m]?.hasNegative);
+    }
+
+    if (consistencyFilter === "always_up") {
+      filtered = filtered.filter(m => markerStats[m]?.alwaysUp);
+    } else if (consistencyFilter === "always_down") {
+      filtered = filtered.filter(m => markerStats[m]?.alwaysDown);
+    }
+
+    return filtered;
+  }, [allNumericKeys, viewMode, consistencyFilter, markerStats]);
+
   console.log("StatHeatmap: received data type:", typeof data, "rowsLength:", rows.length);
   if (rows.length > 0) console.log("StatHeatmap sample rows:", rows.slice(0, 2));
-
-  if (!rows || rows.length === 0) return <Typography>No heatmap data available.</Typography>;
-
-  // Exclude non-marker keys
-  const excludeKeys = new Set(["Time", "time", "treatment_id", "file_id", "filename"]);
-  const isUMAPKey = (k) => /umap|umap1|umap2/i.test(k);
-
-  const allKeys = Array.from(rows.reduce((s, r) => {
-    Object.keys(r).forEach(k => s.add(k));
-    return s;
-  }, new Set()));
-
-  const numericKeys = allKeys.filter((k) => {
-    if (excludeKeys.has(k)) return false;
-    if (isUMAPKey(k)) return false;
-    for (let i = 0; i < rows.length; i++) {
-      const v = rows[i][k];
-      if (typeof v === "number" && Number.isFinite(v)) return true;
-      if (typeof v === "string" && v.trim() !== "" && !Number.isNaN(Number(v))) return true;
-    }
-    return false;
+  console.log("StatHeatmap: chosen treatmentKey:", treatmentKey);
+  console.log("StatHeatmap: markers stats", {
+    total: allNumericKeys.length,
+    filtered: filteredMarkers.length,
+    viewMode,
+    consistencyFilter,
+    sampleStats: Object.fromEntries(Object.entries(markerStats).slice(0, 3))
   });
 
-  console.log("StatHeatmap: keys discovered:", { allKeysCount: allKeys.length, numericKeysCount: numericKeys.length });
-  if (numericKeys.length > 0) console.log("StatHeatmap: numericKeys sample:", numericKeys.slice(0, 40));
-
-  if (numericKeys.length === 0) {
-    console.log("StatHeatmap: no numeric keys found", { allKeys, sampleRows: rows.slice(0,2) });
-    return <Typography>No numeric markers found for heatmap.</Typography>;
+  if (!rows || rows.length === 0) {
+    return <Typography>No heatmap data available.</Typography>;
   }
 
-  const treatmentKeyCandidates = ["treatment_id", "treatment", "group", "label"];
-  const treatmentKey = allKeys.find(k => treatmentKeyCandidates.includes(k)) || "treatment_id";
+  if (filteredMarkers.length === 0) {
+    return (
+      <Card>
+        <CardHeader title="Statistical Heatmap" />
+        <CardContent>
+          <Typography>No markers match the selected filters.</Typography>
+        </CardContent>
+      </Card>
+    );
+  }
 
-  console.log("StatHeatmap: chosen treatmentKey:", treatmentKey);
+  const yOrder = rows.map(r => String(r[treatmentKey] ?? "Unknown"));
 
-  const yOrder = [];
-  const seen = new Set();
-  rows.forEach(r => {
-    const t = r[treatmentKey] == null ? "" : String(r[treatmentKey]);
-    if (!seen.has(t)) {
-      seen.add(t);
-      yOrder.push(t);
-    }
-  });
-
-  console.log("StatHeatmap: yOrder length:", yOrder.length, "sample:", yOrder.slice(0,10));
-
-  // Compute z matrix: mean per marker per treatment (ignore NaN / missing)
-  const z = yOrder.map((t) => {
-    const groupRows = rows.filter(r => {
-      const val = r[treatmentKey] == null ? "" : String(r[treatmentKey]);
-      return val === t;
-    });
-    return numericKeys.map((k) => {
-      const vals = groupRows.map(r => {
-        const v = r[k];
-        if (typeof v === "number") return Number.isFinite(v) ? v : null;
-        if (typeof v === "string") {
-          const n = v.trim() === "" ? NaN : Number(v);
-          return Number.isFinite(n) ? n : null;
-        }
-        return null;
-      }).filter(v => v !== null && !Number.isNaN(v));
-      if (vals.length === 0) return null;
-      const sum = vals.reduce((a,b) => a + b, 0);
-      return sum / vals.length;
-    });
-  });
-
-  // log z matrix size / sample
-  console.log("StatHeatmap: z matrix computed", {
-    zRows: z.length,
-    zCols: z.length ? (z[0] ? z[0].length : 0) : 0,
-    zSampleRow0: z[0] ? z[0].slice(0, 10) : undefined
-  });
-
-  const hover = z.map((rowZ, i) =>
-    rowZ.map((val, j) => {
-      const display = val == null ? "NA" : Number(val).toFixed(3);
-      return `<b>${yOrder[i]}</b><br>${numericKeys[j]}: ${display}<extra></extra>`;
+  const z = rows.map((row) =>
+    filteredMarkers.map((marker) => {
+      const v = row[marker];
+      if (v === null || v === undefined) return null;
+      const n = typeof v === "number" ? v : Number(v);
+      return Number.isFinite(n) ? n : null;
     })
   );
 
+  let maxAbs = 0;
+  for (let i = 0; i < z.length; i++) {
+    for (let j = 0; j < (z[i] || []).length; j++) {
+      const val = z[i][j];
+      if (val != null) maxAbs = Math.max(maxAbs, Math.abs(val));
+    }
+  }
+  if (maxAbs === 0) maxAbs = 1;
+
+  const hover = z.map((rowZ, i) =>
+    rowZ.map((val, j) => {
+      const marker = filteredMarkers[j];
+      const display = val == null ? "NA" : Number(val).toFixed(3);
+      const stats = markerStats[marker];
+      const consistency = stats.alwaysUp ? " 🔺 Always UP" : stats.alwaysDown ? " 🔻 Always DOWN" : "";
+      return `<b>${yOrder[i]}</b><br>${marker}: ${display}${consistency}<extra></extra>`;
+    })
+  );
+
+  const alwaysUpCount = allNumericKeys.filter(m => markerStats[m]?.alwaysUp).length;
+  const alwaysDownCount = allNumericKeys.filter(m => markerStats[m]?.alwaysDown).length;
+
   return (
     <Card>
-      <CardHeader title="Heatmap Differences" subheader={`Markers: ${numericKeys.length} — Groups: ${yOrder.length}`} />
+      <CardHeader
+        title="Statistical Heatmap"
+        subheader={`${filteredMarkers.length} markers × ${yOrder.length} treatments (${alwaysUpCount} always ↑, ${alwaysDownCount} always ↓)`}
+      />
       <CardContent>
+        <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
+          <FormControl size="small" sx={{ minWidth: 200 }}>
+            <InputLabel>View Mode</InputLabel>
+            <Select
+              value={viewMode}
+              label="View Mode"
+              onChange={(e) => setViewMode(e.target.value)}
+            >
+              <MenuItem value="all">All Markers</MenuItem>
+              <MenuItem value="upregulated">Upregulated Only</MenuItem>
+              <MenuItem value="downregulated">Downregulated Only</MenuItem>
+            </Select>
+          </FormControl>
+
+          <FormControl size="small" sx={{ minWidth: 200 }}>
+            <InputLabel>Consistency Filter</InputLabel>
+            <Select
+              value={consistencyFilter}
+              label="Consistency Filter"
+              onChange={(e) => setConsistencyFilter(e.target.value)}
+            >
+              <MenuItem value="all">All Consistency</MenuItem>
+              <MenuItem value="always_up">Always Upregulated</MenuItem>
+              <MenuItem value="always_down">Always Downregulated</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
+
         <Plot
           data={[
             {
               z,
-              x: numericKeys,
+              x: filteredMarkers,
               y: yOrder,
               type: "heatmap",
               colorscale: "RdBu",
               zmid: 0,
+              zmin: -maxAbs,
+              zmax: maxAbs,
               hoverinfo: "text",
               text: hover,
               zauto: false,
+              colorbar: {
+                title: "Value",
+                titleside: "right"
+              }
             },
           ]}
           layout={{
-            height: Math.max(360, yOrder.length * 28 + 120),
-            margin: { l: Math.min(300, Math.max(120, yOrder.length * 12)), b: Math.min(400, numericKeys.length * 8) },
-            yaxis: { automargin: true, tickfont: { size: 11 } },
-            xaxis: { automargin: true, tickangle: -45, tickfont: { size: 10 } },
+            height: Math.max(400, yOrder.length * 80 + 120),
+            margin: {
+              l: 180,
+              b: Math.min(300, filteredMarkers.length * 8),
+              r: 120,
+              t: 50
+            },
+            yaxis: {
+              automargin: true,
+              tickfont: { size: 12 },
+              title: ""
+            },
+            xaxis: {
+              automargin: true,
+              tickangle: -45,
+              tickfont: { size: 9 },
+              title: "Markers"
+            },
           }}
-          config={{ responsive: true }}
+          config={{ responsive: true, displayModeBar: true }}
           style={{ width: "100%" }}
         />
+
+        <div style={{ marginTop: '10px', fontSize: '11px', color: '#666', textAlign: 'center' }}>
+          <p>
+            🔴 Positive values (red) = upregulation | 🔵 Negative values (blue) = downregulation
+          </p>
+        </div>
       </CardContent>
     </Card>
   );
