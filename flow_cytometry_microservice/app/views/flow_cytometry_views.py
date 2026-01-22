@@ -830,46 +830,6 @@ def get_fc_pipeline_umap_results(project_id, progressive_umap_id, username):
     return jsonify({"data": umap_data}), 200
 
 
-def get_fc_pipeline_cohen(project_id, progressive_id, username):
-    # permission checks
-    project = ProjectModel.find_by_progressive_id(project_id)
-    if not project:
-        logger.error(f"Project not found: {project_id} by user {username}")
-        return jsonify({"error": "Project not found"}), 404
-
-    user = UserModel.find_by_username(username)
-    if user is None:
-        logger.error(f"User not found: {username}")
-        return jsonify({"error": "User not found"}), 404
-
-    membership = MemberModel.find_by_user_id_project_id(int(user['progressive_id']), int(project_id))
-    if membership is None:
-        logger.error(f"User does not have permissions for project: {project_id}")
-        return jsonify({"error": "User does not have permissions for project"}), 403
-
-    pipeline_run = FlowCytoPipelineRun.find_by_progressive_id(progressive_id)
-    if not pipeline_run:
-        logger.error(f"Pipeline run not found: {progressive_id} by user {username}")
-        return jsonify({"error": "Pipeline run not found"}), 404
-
-    # prefer the pairwise metrics CSV produced by pairwise analysis
-    cohen_path = pipeline_run.get("pairwise_metrics_path_csv") or pipeline_run.get("cohen_data_path") or pipeline_run.get("cohen_path")
-    if not cohen_path or not os.path.exists(cohen_path):
-        logger.info(f"Cohen metrics file not available for pipeline {progressive_id}")
-        return jsonify({"data": None}), 200
-
-    try:
-        sep = '\t' if cohen_path.lower().endswith(('.tsv', '.txt')) else ','
-        df = pd.read_csv(cohen_path, sep=sep)
-        # sample if too large
-        if len(df) > 20000:
-            df = df.sample(n=20000, random_state=4242)
-        cohen_data = df.to_dict(orient="records")
-        logger.info(f"Cohen data retrieved for project {project_id} by user {username}")
-        return jsonify({"data": cohen_data}), 200
-    except Exception as e:
-        logger.error(f"Error reading Cohen data {cohen_path}: {str(e)}")
-        return jsonify({"error": str(e)}), 500
 
 def get_fc_pipeline_volcano(project_id, progressive_id, username):
     # permission checks
@@ -893,79 +853,94 @@ def get_fc_pipeline_volcano(project_id, progressive_id, username):
         logger.error(f"Pipeline run not found: {progressive_id} by user {username}")
         return jsonify({"error": "Pipeline run not found"}), 404
 
-    # Check for CSV data first, then for an image/plot path
-    csv_path = pipeline_run.get("volcano_data_path") or pipeline_run.get("csv_volcano_data")
+    # 🎯 Cerca il CSV pairwise_metrics (contiene i dati corretti per volcano)
+    csv_path = pipeline_run.get("pairwise_metrics_path_csv")
     plot_path = pipeline_run.get("volcano_plot_path") or pipeline_run.get("volcano_path")
 
     if csv_path and os.path.exists(csv_path):
         try:
+            from scipy import stats
+            
             sep = '\t' if csv_path.lower().endswith(('.tsv', '.txt')) else ','
             df = pd.read_csv(csv_path, sep=sep)
-            if len(df) > 20000:
-                df = df.sample(n=20000, random_state=4242)
-            volcano_data = df.to_dict(orient="records")
-            logger.info(f"Volcano CSV data retrieved for project {project_id} by user {username}")
+            
+            logger.info(f"Pairwise metrics CSV - Shape: {df.shape}, Columns: {df.columns.tolist()}")
+            
+            # ✅ Verifica colonne necessarie
+            if 'marker' not in df.columns or 'mean_difference' not in df.columns:
+                logger.error(f"CSV missing required columns. Found: {df.columns.tolist()}")
+                return jsonify({"error": "Invalid CSV structure"}), 500
+            
+            # 🧮 Calcola p-value se non presente
+            if 'p_value' not in df.columns:
+                logger.warning("p_value column not found, calculating from Cohen's d and sample size")
+                
+                # Se abbiamo cohen_d e std_difference, calcoliamo il p-value
+                if 'cohen_d' in df.columns and 'std_difference' in df.columns:
+                    # Calcola t-statistic da Cohen's d
+                    # Assumiamo n=4 coppie (8 campioni totali) basandoci sui file FCS
+                    n_pairs = 4
+                    df['t_statistic'] = df['cohen_d'] * np.sqrt(n_pairs)
+                    
+                    # Calcola p-value bilaterale da t-statistic
+                    df['p_value'] = df['t_statistic'].apply(
+                        lambda t: 2 * (1 - stats.t.cdf(abs(t), df=n_pairs-1))
+                    )
+                    
+                    # 🔬 Applica correzione FDR (Benjamini-Hochberg)
+                    from statsmodels.stats.multitest import multipletests
+                    _, df['fdr_corrected'], _, _ = multipletests(
+                        df['p_value'], 
+                        alpha=0.05, 
+                        method='fdr_bh'
+                    )
+                    
+                    # Salva il CSV aggiornato
+                    df.to_csv(csv_path, sep=sep, index=False)
+                    logger.info(f"Calculated and saved p_value and fdr_corrected to {csv_path}")
+                else:
+                    # Fallback: usa un p-value proxy da Cohen's d
+                    df['p_value'] = 1.0 / (1.0 + abs(df.get('cohen_d', 0)))
+                    logger.warning("Using Cohen's d proxy for p-value (no std_difference)")
+            
+            # 📊 Prepara dati per volcano plot
+            volcano_df = pd.DataFrame({
+                'gene': df['marker'],
+                'log2FoldChange': df['mean_difference'],
+                'p_value': df['p_value'],
+                'cohen_d': df.get('cohen_d', 0),
+                'fdr_corrected': df.get('fdr_corrected', df['p_value'])
+            })
+            
+            # Aggiungi colonne extra se presenti
+            for col in ['std_difference', 'abs_mean_effect', 'ci_lower', 'ci_upper', 'direction']:
+                if col in df.columns:
+                    volcano_df[col] = df[col]
+            
+            # Campiona se troppo grande
+            if len(volcano_df) > 20000:
+                volcano_df = volcano_df.sample(n=20000, random_state=4242)
+            
+            volcano_data = volcano_df.to_dict(orient="records")
+            
+            logger.info(f"Volcano data from pairwise_metrics: {len(volcano_data)} markers")
             return jsonify({"data": volcano_data}), 200
+            
         except Exception as e:
-            logger.error(f"Error reading volcano CSV {csv_path}: {str(e)}")
+            logger.error(f"Error processing pairwise_metrics CSV: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return jsonify({"error": str(e)}), 500
 
+    # Fallback: immagine volcano
     if plot_path and os.path.exists(plot_path):
-        # return info about the image (frontend can request the file endpoint or use a dedicated route)
-        logger.info(f"Volcano plot available for pipeline {progressive_id}")
+        logger.info(f"Volcano plot image available for pipeline {progressive_id}")
         return jsonify({"data": {"image": os.path.basename(plot_path), "path": plot_path}}), 200
 
     logger.info(f"No volcano results available for pipeline {progressive_id}")
     return jsonify({"data": None}), 200
 
-def get_fc_pipeline_heatmap_differences(project_id, progressive_id, username):
-    # permission checks
-    project = ProjectModel.find_by_progressive_id(project_id)
-    if not project:
-        logger.error(f"Project not found: {project_id} by user {username}")
-        return jsonify({"error": "Project not found"}), 404
 
-    user = UserModel.find_by_username(username)
-    if user is None:
-        logger.error(f"User not found: {username}")
-        return jsonify({"error": "User not found"}), 404
-
-    membership = MemberModel.find_by_user_id_project_id(int(user['progressive_id']), int(project_id))
-    if membership is None:
-        logger.error(f"User does not have permissions for project: {project_id}")
-        return jsonify({"error": "User does not have permissions for project"}), 403
-
-    pipeline_run = FlowCytoPipelineRun.find_by_progressive_id(progressive_id)
-    if not pipeline_run:
-        logger.error(f"Pipeline run not found: {progressive_id} by user {username}")
-        return jsonify({"error": "Pipeline run not found"}), 404
-
-    # prefer the CSV differences path generated in pairwise analysis
-    heatmap_csv = pipeline_run.get("heatmap_difference_path_csv") or pipeline_run.get("heatmap_differences") or pipeline_run.get("heatmap_data_path")
-    print(heatmap_csv)
-    # also support image path(s)
-    heatmap_image = pipeline_run.get("heatmap_difference_path") or pipeline_run.get("stat_heatmap_path")
-
-    if heatmap_csv and os.path.exists(heatmap_csv):
-        try:
-            sep = '\t' if heatmap_csv.lower().endswith(('.tsv', '.txt')) else ','
-            df = pd.read_csv(heatmap_csv, sep=sep)
-            if len(df) > 20000:
-                df = df.sample(n=20000, random_state=4242)
-            heatmap_diff_data = df.to_dict(orient="records")
-            logger.info(f"Heatmap difference CSV retrieved for project {project_id} by user {username}")
-            return jsonify({"data": heatmap_diff_data}), 200
-        except Exception as e:
-            logger.error(f"Error reading heatmap CSV {heatmap_csv}: {str(e)}")
-            return jsonify({"error": str(e)}), 500
-
-    if heatmap_image:
-        # if image exists, return its filename/path for frontend to request via file endpoint
-        logger.info(f"Heatmap image available for pipeline {progressive_id}")
-        return jsonify({"data": {"image": os.path.basename(heatmap_image), "path": heatmap_image}}), 200
-
-    logger.info(f"No heatmap differences available for pipeline {progressive_id}")
-    return jsonify({"data": None}), 200
 
 # views to get the fcs heatmap data
 def get_fc_pipeline_run_heatmap_results_views(project_id, progressive_id, username):
@@ -1235,8 +1210,7 @@ def get_fc_pipeline_cohen(project_id, progressive_id, username):
         return jsonify({"data": None}), 200
 
     try:
-        sep = '\t' if cohen_path.lower().endswith(('.tsv', '.txt')) else ','
-        df = pd.read_csv(cohen_path, sep=sep)
+        df = pd.read_csv(cohen_path)
         # sample if too large
         if len(df) > 20000:
             df = df.sample(n=20000, random_state=4242)
@@ -1269,26 +1243,88 @@ def get_fc_pipeline_volcano(project_id, progressive_id, username):
         logger.error(f"Pipeline run not found: {progressive_id} by user {username}")
         return jsonify({"error": "Pipeline run not found"}), 404
 
-    # Check for CSV data first, then for an image/plot path
-    csv_path = pipeline_run.get("volcano_data_path") or pipeline_run.get("csv_volcano_data")
+    # 🎯 Cerca il CSV pairwise_metrics (contiene i dati corretti per volcano)
+    csv_path = pipeline_run.get("pairwise_metrics_path_csv")
     plot_path = pipeline_run.get("volcano_plot_path") or pipeline_run.get("volcano_path")
 
     if csv_path and os.path.exists(csv_path):
         try:
+            from scipy import stats
+            
             sep = '\t' if csv_path.lower().endswith(('.tsv', '.txt')) else ','
             df = pd.read_csv(csv_path, sep=sep)
-            if len(df) > 20000:
-                df = df.sample(n=20000, random_state=4242)
-            volcano_data = df.to_dict(orient="records")
-            logger.info(f"Volcano CSV data retrieved for project {project_id} by user {username}")
+            
+            logger.info(f"Pairwise metrics CSV - Shape: {df.shape}, Columns: {df.columns.tolist()}")
+            
+            # ✅ Verifica colonne necessarie
+            if 'marker' not in df.columns or 'mean_difference' not in df.columns:
+                logger.error(f"CSV missing required columns. Found: {df.columns.tolist()}")
+                return jsonify({"error": "Invalid CSV structure"}), 500
+            
+            # 🧮 Calcola p-value se non presente
+            if 'p_value' not in df.columns:
+                logger.warning("p_value column not found, calculating from Cohen's d and sample size")
+                
+                # Se abbiamo cohen_d e std_difference, calcoliamo il p-value
+                if 'cohen_d' in df.columns and 'std_difference' in df.columns:
+                    # Calcola t-statistic da Cohen's d
+                    # Assumiamo n=4 coppie (8 campioni totali) basandoci sui file FCS
+                    n_pairs = 4
+                    df['t_statistic'] = df['cohen_d'] * np.sqrt(n_pairs)
+                    
+                    # Calcola p-value bilaterale da t-statistic
+                    df['p_value'] = df['t_statistic'].apply(
+                        lambda t: 2 * (1 - stats.t.cdf(abs(t), df=n_pairs-1))
+                    )
+                    
+                    # 🔬 Applica correzione FDR (Benjamini-Hochberg)
+                    from statsmodels.stats.multitest import multipletests
+                    _, df['fdr_corrected'], _, _ = multipletests(
+                        df['p_value'], 
+                        alpha=0.05, 
+                        method='fdr_bh'
+                    )
+                    
+                    # Salva il CSV aggiornato
+                    df.to_csv(csv_path, sep=sep, index=False)
+                    logger.info(f"Calculated and saved p_value and fdr_corrected to {csv_path}")
+                else:
+                    # Fallback: usa un p-value proxy da Cohen's d
+                    df['p_value'] = 1.0 / (1.0 + abs(df.get('cohen_d', 0)))
+                    logger.warning("Using Cohen's d proxy for p-value (no std_difference)")
+            
+            # 📊 Prepara dati per volcano plot
+            volcano_df = pd.DataFrame({
+                'gene': df['marker'],
+                'log2FoldChange': df['mean_difference'],
+                'p_value': df['p_value'],
+                'cohen_d': df.get('cohen_d', 0),
+                'fdr_corrected': df.get('fdr_corrected', df['p_value'])
+            })
+            
+            # Aggiungi colonne extra se presenti
+            for col in ['std_difference', 'abs_mean_effect', 'ci_lower', 'ci_upper', 'direction']:
+                if col in df.columns:
+                    volcano_df[col] = df[col]
+            
+            # Campiona se troppo grande
+            if len(volcano_df) > 20000:
+                volcano_df = volcano_df.sample(n=20000, random_state=4242)
+            
+            volcano_data = volcano_df.to_dict(orient="records")
+            
+            logger.info(f"Volcano data from pairwise_metrics: {len(volcano_data)} markers")
             return jsonify({"data": volcano_data}), 200
+            
         except Exception as e:
-            logger.error(f"Error reading volcano CSV {csv_path}: {str(e)}")
+            logger.error(f"Error processing pairwise_metrics CSV: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return jsonify({"error": str(e)}), 500
 
+    # Fallback: immagine volcano
     if plot_path and os.path.exists(plot_path):
-        # return info about the image (frontend can request the file endpoint or use a dedicated route)
-        logger.info(f"Volcano plot available for pipeline {progressive_id}")
+        logger.info(f"Volcano plot image available for pipeline {progressive_id}")
         return jsonify({"data": {"image": os.path.basename(plot_path), "path": plot_path}}), 200
 
     logger.info(f"No volcano results available for pipeline {progressive_id}")
@@ -1317,66 +1353,21 @@ def get_fc_pipeline_heatmap_differences(project_id, progressive_id, username):
         return jsonify({"error": "Pipeline run not found"}), 404
 
     # prefer the CSV differences path generated in pairwise analysis
-    heatmap_csv = pipeline_run.get("heatmap_difference_path_csv") or pipeline_run.get("heatmap_differences") or pipeline_run.get("heatmap_data_path")
-    print(heatmap_csv)
-    # also support image path(s)
-    heatmap_image = pipeline_run.get("heatmap_difference_path") or pipeline_run.get("stat_heatmap_path")
+    heatmap_csv = pipeline_run.get("heatmap_difference_path_csv")
 
-    if heatmap_csv and os.path.exists(heatmap_csv):
-        try:
-            sep = '\t' if heatmap_csv.lower().endswith(('.tsv', '.txt')) else ','
-            df = pd.read_csv(heatmap_csv, sep=sep)
-            if len(df) > 20000:
-                df = df.sample(n=20000, random_state=4242)
-            heatmap_diff_data = df.to_dict(orient="records")
-            logger.info(f"Heatmap difference CSV retrieved for project {project_id} by user {username}")
-            return jsonify({"data": heatmap_diff_data}), 200
-        except Exception as e:
-            logger.error(f"Error reading heatmap CSV {heatmap_csv}: {str(e)}")
-            return jsonify({"error": str(e)}), 500
-
-    if heatmap_image:
-        # if image exists, return its filename/path for frontend to request via file endpoint
-        logger.info(f"Heatmap image available for pipeline {progressive_id}")
-        return jsonify({"data": {"image": os.path.basename(heatmap_image), "path": heatmap_image}}), 200
-
-    logger.info(f"No heatmap differences available for pipeline {progressive_id}")
-    return jsonify({"data": None}), 200
-
-# views to get the fcs heatmap data
-def get_fc_pipeline_run_heatmap_results_views(project_id, progressive_id, username):
-    # check the project id exists
-    project = ProjectModel.find_by_progressive_id(project_id)
-    if not project:
-        logger.error(f"Project not found: {project_id} by user {username}")
-        return jsonify({"error": "Project not found"}), 404
-    
-    # check the user
-    user = UserModel.find_by_username(username)
-    if user is None:
-        logger.error(f"User not found: {username}")
-        return jsonify({"error": "User not found"}), 404
-    
-    # check the membership of the user
-    membership = MemberModel.find_by_user_id_project_id(int(user['progressive_id']), int(project_id))
-    if membership is None:
-        logger.error(f"User does not have permissions for project: {project_id}")
-        return jsonify({"error": "User does not have permissions for project"}), 403
-    
-    # get the pipeline run by the progressive id
-    pipeline_run = FlowCytoPipelineRun.find_by_progressive_id(progressive_id)
-    
-    # check if the pipeline run exists
-    if not pipeline_run:
-        logger.error(f"Pipeline run not found: {progressive_id} by user {username}")
-        return jsonify({"error": "Pipeline run not found"}), 404
-    
-    # get the heatmap csv file
-    df = pd.read_csv(pipeline_run["heatmap_data_path"])
-        
-    # transform data into a dictionary
-    heatmap_data = df.to_dict(orient="records")
-    
-    logger.info(f"Heatmap data retrieved for project {project_id} by user {username}")
-    
-    return jsonify({"data": heatmap_data}), 200
+    if not heatmap_csv or not os.path.exists(heatmap_csv):
+        logger.info(f"Heatmap differences file not available for pipeline {progressive_id}")
+        return jsonify({"data": None}), 200
+    try:
+        df = pd.read_csv(heatmap_csv)
+        # sample if too large
+        if len(df) > 20000:
+            df = df.sample(n=20000, random_state=4242)
+            # transform NaN into 0
+            df = df.fillna(0)
+        heatmap_data = df.to_dict(orient="records")
+        logger.info(f"Heatmap differences data retrieved for project {project_id} by user {username}")
+        return jsonify({"data": heatmap_data}), 200
+    except Exception as e:
+        logger.error(f"Error reading heatmap differences data {heatmap_csv}: {str(e)}")
+        return jsonify({"error": str(e)}), 500

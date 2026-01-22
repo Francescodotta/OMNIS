@@ -255,6 +255,7 @@ def get_pipeline_heatmap_differences_results(project_id, pipeline_id):
     user = get_jwt_identity()
     print(pipeline_id, project_id)
     result, status_code = fcv.get_fc_pipeline_heatmap_differences(project_id, pipeline_id, user)
+    print(result)
     return result, status_code
 
 
