@@ -1,0 +1,36 @@
+{
+    "pipeline": {
+        "steps": [
+            {
+                "name": "select_fcs_files",
+                "parameters": {"file_paths": ["/media/datastorage/it_cast/omnis_microservice_db/flow_cytometry/project_13/02092024_Sangue_topi_Sangue_topo_1_800nm.fcs"]}
+            },
+            {
+                "name": "umap"
+            },
+            {
+                "name": "leiden_clustering"
+            }
+        ]
+    }
+}
+
+
+{
+    "pipeline": {
+        "steps": [
+            {
+                "name": "select_fcs_files",
+                "parameters": {"file_paths": ["/media/datastorage/it_cast/omnis_microservice_db/flow_cytometry/project_13/02092024_Sangue_topi_Sangue_topo_1_800nm.fcs"]}
+            },
+            {
+                "name": "flowsom_clustering",
+                "parameters": {
+                    "n_clusters": 5,
+                    "xdim": 10,
+                    "ydim": 10
+                }
+            },
+        ]
+    }
+}

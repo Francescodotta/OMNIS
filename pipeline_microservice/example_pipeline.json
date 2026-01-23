@@ -1,0 +1,33 @@
+{
+    "pipeline":{
+        "steps":[
+            {
+                "name": "read_mzML_files",
+                "parameters": {
+                    "file_paths": ["/media/datastorage/it_cast/omnis_microservice_db/metabolomics/20231006_NA_002.mzML"]
+                }
+            },
+            {
+                "name": "select_spectra",
+                "parameters": {
+                    "lower_RT": 0,
+                    "higher_RT": 500
+                }
+            },
+            {
+                "name":"align_spectra",
+                "parameters": {
+                    "reference_file": "/media/datastorage/it_cast/omnis_microservice_db/metabolomics/20231006_NA_002.mzML"
+                }
+            },
+            {
+                "name": "detect_compounds",
+                "parameters": {
+                    "mass_tolerance_ppm": 10,
+                    "min_peak_intensity": 50000,
+                    "min_scans_per_peak": 10
+                }
+            }
+        ]
+    }
+}
