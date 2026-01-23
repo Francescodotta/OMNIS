@@ -12,7 +12,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxrender1 \
     libfontconfig1 \
     libcairo2 \
+    curl \
+    unzip \
+    mono-complete \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
+
+# mk directory for tools
+RUN mkdir -p /tools
+
+RUN curl -L -o /tmp/TRFP.zip "https://github.com/CompOmics/ThermoRawFileParser/releases/download/v1.4.5/ThermoRawFileParser1.4.5.zip" \
+ && unzip -q /tmp/TRFP.zip -d /tools \
+ && rm -f /tmp/TRFP.zip \
+ && chmod -R a+rX /tools
 
 # Copy the requirements.txt file and install Python dependencies
 COPY requirements.txt .

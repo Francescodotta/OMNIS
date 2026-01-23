@@ -12,6 +12,7 @@ services:
       - MONGO_URI_METABOLOMICS=${MONGO_URI_METABOLOMICS}
       - FLASK_RUN_METABOLOMICS_DEV_PORT=${FLASK_RUN_METABO_DEV_PORT}
       - FLASK_RUN_METABOLOMICS_PROD_PORT=${FLASK_RUN_METABO_PROD_PORT}
+      - THERMO_RAW_FILE_PARSER_PATH=/tools/ThermoRawFileParser.exe
     volumes:
       - ./logs:/metabolomics_microservice/logs
       - ${DB_DIR}:${DB_DIR}
